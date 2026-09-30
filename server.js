@@ -202,19 +202,22 @@ function buildContent(text, images = [], files = []) {
 }
 
 // ---------- running Claude Code ----------
-let current = null; // the running claude child process, if any
+// Claude processes for turns in progress. Several can run at once (one per session/tab);
+// a new turn only replaces an unfinished turn in the same session.
+const running = new Set();
 
 // Permission prompts and questions Claude is waiting on, keyed by control request id.
 const pending = new Map(); // requestId -> { child, send, kind, input, suggestions, toolUseId }
 
-function cancelCurrent() {
-  if (!current) return;
-  current.cancelled = true;
-  current.kill('SIGINT');
+function cancelChild(child) {
+  if (!child || child.exitCode !== null || child.signalCode) return;
+  child.cancelled = true;
+  child.kill('SIGINT');
 }
+function cancelAll() { for (const c of running) cancelChild(c); }
 
 function ask({ content, sessionId, cwd, permissionMode = PERMISSION_MODE }, res) {
-  cancelCurrent();
+  if (sessionId) for (const c of running) if (c.sessionId === sessionId) cancelChild(c);
 
   // stream-json input + --permission-prompt-tool stdio lets Claude Code route permission
   // prompts and AskUserQuestion to us as control requests, like the Agent SDK does.
@@ -225,7 +228,8 @@ function ask({ content, sessionId, cwd, permissionMode = PERMISSION_MODE }, res)
   if (MODEL) args.push('--model', MODEL);
 
   const child = spawn(CLAUDE_BIN, args, { cwd, env: process.env });
-  current = child;
+  child.sessionId = sessionId || null; // filled in from the init message for new sessions
+  running.add(child);
   child.userDenied = new Set(); // tool_use ids the user said no to (not "blocked by permissions")
   const write = (obj) => { if (child.stdin.writable) child.stdin.write(JSON.stringify(obj) + '\n'); };
   child.write = write;
@@ -272,7 +276,10 @@ function ask({ content, sessionId, cwd, permissionMode = PERMISSION_MODE }, res)
     if (msg.parent_tool_use_id) return; // ignore sub-agent chatter
     switch (msg.type) {
       case 'system':
-        if (msg.subtype === 'init') send({ type: 'session', id: msg.session_id, cwd: msg.cwd, model: msg.model });
+        if (msg.subtype === 'init') {
+          child.sessionId = msg.session_id;
+          send({ type: 'session', id: msg.session_id, cwd: msg.cwd, model: msg.model });
+        }
         break;
       case 'stream_event': {
         const ev = msg.event || {};
@@ -324,7 +331,7 @@ function ask({ content, sessionId, cwd, permissionMode = PERMISSION_MODE }, res)
     res.end();
   });
   child.on('close', (code, signal) => {
-    if (current === child) current = null;
+    running.delete(child);
     for (const [id, p] of pending) if (p.child === child) pending.delete(id);
     if (!gotResult) {
       send(signal || child.cancelled
@@ -334,7 +341,7 @@ function ask({ content, sessionId, cwd, permissionMode = PERMISSION_MODE }, res)
     res.end();
   });
   // Browser went away (e.g. user interrupted): stop the run.
-  res.on('close', () => { if (!res.writableFinished && current === child) cancelCurrent(); });
+  res.on('close', () => { if (!res.writableFinished) cancelChild(child); });
 }
 
 // ---------- HTTP ----------
@@ -427,7 +434,7 @@ const server = http.createServer(async (req, res) => {
       return json(200, { ok: true });
     }
     if (route === 'POST /api/cancel') {
-      cancelCurrent();
+      cancelAll();
       return json(200, { ok: true });
     }
     json(404, { error: 'not found' });
@@ -449,5 +456,5 @@ server.listen(PORT, '127.0.0.1', () => {
 
 // On restart (or Ctrl+C), stop any Claude turn still running so it isn't left behind.
 for (const sig of ['SIGTERM', 'SIGINT']) {
-  process.on(sig, () => { cancelCurrent(); server.close(); process.exit(0); });
+  process.on(sig, () => { cancelAll(); server.close(); process.exit(0); });
 }

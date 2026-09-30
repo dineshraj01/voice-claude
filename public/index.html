@@ -570,8 +570,10 @@ function renderHome() {
           <span class="open">Open ${icon('arrow')}</span>
         </div>
         <button class="x" title="${s.hidden ? 'Put back on the home page' : 'Remove from the home page (the session itself is kept)'}">${s.hidden ? 'Restore' : icon('eyeoff')}</button>`;
-      c.onclick = () => go(`#s=${s.id}`);
-      c.onkeydown = (e) => { if (e.key === 'Enter') go(`#s=${s.id}`); };
+      // Each session opens in its own tab, so several can stay open side by side.
+      const openTab = () => window.open(`${location.pathname}#s=${s.id}`, '_blank');
+      c.onclick = openTab;
+      c.onkeydown = (e) => { if (e.key === 'Enter') openTab(); };
       c.querySelector('.x').onclick = async (e) => {
         e.stopPropagation();
         await fetch(`/api/sessions/${s.id}/${s.hidden ? 'unhide' : 'hide'}`, { method: 'POST' });
@@ -594,7 +596,7 @@ $('newForm').onsubmit = (e) => {
   if (!dir) return;
   if (dir.startsWith('~')) dir = homeData.home + dir.slice(1);
   $('newForm').hidden = true;
-  go(`#new=${encodeURIComponent(dir)}`);
+  window.open(`${location.pathname}#new=${encodeURIComponent(dir)}`, '_blank'); // like session cards, a new tab
 };
 
 // =====================================================================
