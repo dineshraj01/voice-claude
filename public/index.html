@@ -69,6 +69,14 @@
   .status-pill { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; padding: 5px 10px; border-radius: 99px; background: var(--surface); border: 1px solid var(--line); color: var(--muted); white-space: nowrap; box-shadow: var(--shadow-sm); }
   .status-pill .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--muted); opacity: .5; }
   .status-pill.on { color: var(--speak); }
+  .mode-pill { display: inline-flex; align-items: center; gap: 6px; padding: 0 4px 0 10px; height: 30px; border-radius: 99px; background: var(--surface); border: 1px solid var(--line); box-shadow: var(--shadow-sm); color: var(--ink-2); cursor: pointer; }
+  .mode-pill svg { width: 14px; height: 14px; color: var(--muted); }
+  .mode-pill select { appearance: none; -webkit-appearance: none; border: none; background: transparent; font: 600 12.5px/1 inherit; font-family: inherit; color: inherit; padding: 0 18px 0 0; cursor: pointer; outline: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%238a867d' stroke-width='2.4' stroke-linecap='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 2px center; background-size: 12px; }
+  .mode-pill:focus-within { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+  .mode-pill.plan svg { color: var(--work); }
+  .mode-pill.danger { border-color: color-mix(in srgb, var(--listen) 50%, transparent); color: var(--listen); }
+  .mode-pill.danger svg { color: var(--listen); }
   .status-pill.on .dot { background: var(--speak); opacity: 1; box-shadow: 0 0 0 3px rgba(47,163,107,.18); }
 
   details.settings { position: relative; }
@@ -100,13 +108,13 @@
   .newform input { flex: 1; min-width: 220px; font: 14px ui-monospace, "SF Mono", Menlo, monospace; padding: 9px 12px; border-radius: 10px; border: 1px solid var(--line-2); background: var(--surface-2); color: var(--ink); outline: none; }
   .newform input:focus { border-color: var(--accent); box-shadow: 0 0 0 4px var(--accent-soft); }
 
+  .groups { display: grid; grid-template-columns: minmax(0, 1fr); gap: 36px; }
   .group { display: grid; gap: 12px; }
   .group-head { display: flex; align-items: center; gap: 10px; min-width: 0; }
   .folder-badge { width: 28px; height: 28px; border-radius: 8px; display: grid; place-items: center; color: #fff; flex-shrink: 0; font-size: 12px; font-weight: 700; box-shadow: var(--shadow-sm); }
   .group-head .path { font-weight: 650; font-size: 15px; letter-spacing: -.01em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .group-head .full { color: var(--muted); font-size: 12px; font-family: ui-monospace, "SF Mono", Menlo, monospace; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
   .group-head .count { font-size: 12px; color: var(--muted); background: var(--chip); padding: 1px 8px; border-radius: 99px; flex-shrink: 0; }
-  .group-head .btn { margin-left: auto; padding: 5px 10px; font-size: 12.5px; flex-shrink: 0; }
   .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); gap: 16px; }
   .card {
     position: relative; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius);
@@ -208,25 +216,55 @@
 
   /* ---------- floating voice dock ---------- */
   footer { padding: 0 20px 20px; }
-  .dock { max-width: 800px; margin: 0 auto; background: var(--glass); backdrop-filter: saturate(1.6) blur(18px); -webkit-backdrop-filter: saturate(1.6) blur(18px); border: 1px solid var(--line); border-radius: 24px; box-shadow: var(--shadow-lg); padding: 14px; display: grid; gap: 10px; }
-  .live { text-align: center; color: var(--muted); font-size: 15px; padding: 2px 8px; min-height: 0; }
+  .dock-wrap { max-width: 900px; margin: 0 auto; display: flex; align-items: center; gap: 16px; }
+  .dock { flex: 1; min-width: 0; background: var(--glass); backdrop-filter: saturate(1.6) blur(18px); -webkit-backdrop-filter: saturate(1.6) blur(18px); border: 1px solid var(--line); border-radius: 22px; box-shadow: var(--shadow-lg); padding: 8px 10px 10px; display: grid; gap: 6px; }
+  .live { color: var(--muted); font-size: 15px; padding: 2px 6px; }
   .live:empty { display: none; }
   .live .final { color: var(--ink); }
-  .dock-row { display: flex; align-items: center; gap: 14px; }
-  .state { flex: 1; min-width: 0; display: grid; gap: 2px; padding-left: 6px; }
-  .state .s1 { font-weight: 650; font-size: 14.5px; display: flex; align-items: center; gap: 8px; }
-  .state .s2 { font-size: 12.5px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .state .s1 .led { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); opacity: .5; }
+  /* attachments waiting to be sent */
+  .tray { display: flex; flex-wrap: wrap; gap: 8px; padding: 2px 2px 0; }
+  .tray:empty { display: none; }
+  .att { position: relative; display: flex; align-items: center; gap: 9px; max-width: 250px; background: var(--surface); border: 1px solid var(--line-2); border-radius: 12px; padding: 6px 32px 6px 6px; box-shadow: var(--shadow-sm); font-size: 13px; animation: rise .25s ease both; }
+  .att img, .att .ficon { width: 40px; height: 40px; border-radius: 8px; flex-shrink: 0; }
+  .att img { object-fit: cover; }
+  .att .ficon { display: grid; place-items: center; background: var(--chip); color: var(--ink-2); }
+  .att .meta { display: grid; min-width: 0; line-height: 1.3; }
+  .att .meta b { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .att .meta span { font-size: 11.5px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .att.busy .meta span { color: var(--work); }
+  .att.err { border-color: var(--listen); }
+  .att.err .meta span { color: var(--listen); }
+  .att .rm { position: absolute; top: 5px; right: 5px; width: 22px; height: 22px; border-radius: 7px; border: none; background: transparent; color: var(--muted); display: grid; place-items: center; padding: 0; }
+  .att .rm:hover { background: var(--chip); color: var(--ink); }
+  .att .rm svg { width: 13px; height: 13px; }
+  /* attachments inside a sent message */
+  .bubble .atts { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 6px; margin-bottom: 8px; white-space: normal; }
+  .bubble .atts:last-child { margin-bottom: 0; }
+  .bubble .atts img { max-width: 240px; max-height: 180px; border-radius: 10px; display: block; border: 1px solid rgba(255,255,255,.3); }
+  .fchip { display: inline-flex; align-items: center; gap: 6px; background: rgba(255,255,255,.2); border-radius: 8px; padding: 4px 9px; font-size: 12.5px; max-width: 100%; }
+  .fchip svg { width: 13px; height: 13px; flex-shrink: 0; }
+  .fchip span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .drop-overlay { position: fixed; inset: 0; z-index: 50; display: grid; place-items: center; pointer-events: none; background: color-mix(in srgb, var(--bg) 65%, transparent); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); }
+  .drop-overlay .box { border: 2px dashed var(--accent); border-radius: 26px; padding: 44px 64px; background: var(--surface); box-shadow: var(--shadow-lg); display: grid; justify-items: center; gap: 8px; text-align: center; }
+  .drop-overlay .box svg { width: 40px; height: 40px; color: var(--accent); }
+  .drop-overlay h3 { margin: 0; font-size: 20px; letter-spacing: -.02em; }
+  .drop-overlay p { margin: 0; color: var(--muted); font-size: 14px; }
+  .state { display: flex; align-items: center; gap: 6px; padding: 0 6px; font-size: 12px; color: var(--muted); min-width: 0; white-space: nowrap; overflow: hidden; }
+  .state b { color: var(--ink-2); font-weight: 600; }
+  .state .sep { opacity: .6; }
+  .state #stateHint { overflow: hidden; text-overflow: ellipsis; }
+  .state kbd { font-size: 10.5px; padding: 0 4px; }
+  .state .led { width: 7px; height: 7px; border-radius: 50%; background: var(--muted); opacity: .5; flex-shrink: 0; }
   body[data-state=listening] .state .led { background: var(--listen); opacity: 1; animation: blink 1s infinite; }
   body[data-state=working] .state .led { background: var(--work); opacity: 1; }
   body[data-state=speaking] .state .led { background: var(--speak); opacity: 1; }
   body[data-state=asking] .state .led { background: var(--ask); opacity: 1; animation: blink 1.2s infinite; }
-  #talk { position: relative; width: 64px; height: 64px; border-radius: 50%; border: none; flex-shrink: 0; color: #fff; display: grid; place-items: center;
+  #talk { position: relative; width: 58px; height: 58px; border-radius: 50%; border: none; flex-shrink: 0; color: #fff; display: grid; place-items: center;
     background: linear-gradient(180deg, var(--accent-2), var(--accent)); box-shadow: 0 2px 4px rgba(0,0,0,.12), 0 12px 28px -8px rgba(212,102,63,.8); transition: transform .15s, background .25s, box-shadow .25s; }
   #talk:hover { transform: scale(1.04); }
   #talk:active { transform: scale(.95); }
-  #talk svg { width: 26px; height: 26px; position: relative; z-index: 1; }
-  #talk::after { content: ""; position: absolute; inset: -5px; border-radius: 50%; border: 2px solid transparent; }
+  #talk svg { width: 27px; height: 27px; position: relative; z-index: 1; }
+  #talk::after { content: ""; position: absolute; inset: -4px; border-radius: 50%; border: 2px solid transparent; }
   body[data-state=listening] #talk { background: linear-gradient(180deg, #f06368, var(--listen)); box-shadow: 0 12px 28px -8px rgba(229,72,77,.8); }
   body[data-state=listening] #talk::after { border-color: rgba(229,72,77,.5); animation: ring 1.4s infinite; }
   body[data-state=working] #talk { background: linear-gradient(180deg, #6b93f5, var(--work)); box-shadow: 0 12px 28px -8px rgba(79,124,240,.8); }
@@ -242,9 +280,22 @@
   @keyframes bar { 0%, 100% { transform: scaleY(.3); } 50% { transform: scaleY(1); } }
   body[data-state=speaking] #talk .mic, body[data-state=listening] #talk .mic { display: none; }
   body[data-state=speaking] #talk .bars, body[data-state=listening] #talk .bars { display: flex; }
-  .typebar { display: flex; align-items: center; gap: 6px; flex: 1.4; min-width: 0; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 4px 4px 4px 14px; transition: border-color .15s, box-shadow .15s; }
+  .compose { display: flex; align-items: center; gap: 8px; min-width: 0; }
+  #readAloud { display: grid; justify-items: center; align-content: center; gap: 3px; width: 76px; height: 76px; padding: 0; flex-shrink: 0;
+    border-radius: 22px; border: 1px solid var(--line-2); background: var(--surface); color: var(--muted);
+    font-size: 11.5px; font-weight: 650; box-shadow: var(--shadow); transition: background .2s, color .2s, border-color .2s, box-shadow .2s, transform .15s; }
+  #readAloud:hover { border-color: var(--speak); }
+  #readAloud:active { transform: scale(.96); }
+  #readAloud svg { width: 26px; height: 26px; }
+  #readAloud .ra-on { display: none; }
+  #readAloud[aria-pressed=true] { background: linear-gradient(180deg, #45bb82, var(--speak)); color: #fff; border-color: transparent; box-shadow: 0 8px 20px -8px rgba(47,163,107,.8); }
+  #readAloud[aria-pressed=true] .ra-on { display: block; }
+  #readAloud[aria-pressed=true] .ra-off { display: none; }
+  .ra-label { display: grid; justify-items: center; line-height: 1.15; }
+  .ra-label small { font-size: 10.5px; font-weight: 500; opacity: .8; }
+  .typebar { display: flex; align-items: center; gap: 6px; flex: 1; min-width: 0; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 4px 4px 4px 14px; transition: border-color .15s, box-shadow .15s; }
   .typebar:focus-within { border-color: var(--accent); box-shadow: 0 0 0 4px var(--accent-soft); }
-  .typebar input { flex: 1; min-width: 0; border: none; outline: none; background: transparent; font: inherit; color: var(--ink); padding: 7px 0; }
+  .typebar input { flex: 1; min-width: 0; border: none; outline: none; background: transparent; font: inherit; color: var(--ink); padding: 8px 0; }
   .typebar button { width: 34px; height: 34px; border-radius: 10px; border: none; background: var(--chip); color: var(--ink-2); display: grid; place-items: center; }
   .typebar button:hover { background: var(--accent); color: #fff; }
   @media (max-width: 640px) {
@@ -253,8 +304,9 @@
     .hero h2 { font-size: 24px; }
     main { padding: 20px 16px; }
     footer { padding: 0 12px 12px; }
-    .dock-row { flex-wrap: wrap; }
-    .typebar { order: 3; flex-basis: 100%; }
+    .dock-wrap { gap: 10px; }
+    #readAloud { width: 60px; height: 60px; border-radius: 18px; }
+    #readAloud .ra-label > span { display: none; }
     .msg.user .bubble { max-width: 90%; }
     .avatar { display: none; }
     .status-pill .txt { display: none; }
@@ -273,6 +325,15 @@
     <span class="crumb"><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg><span id="sMeta"></span></span>
   </div>
   <span class="spacer" id="spacer"></span>
+  <label class="mode-pill" id="modePill" title="Permission mode: how much Claude may do without asking. Applies from your next message.">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/></svg>
+    <select id="permMode" aria-label="Permission mode">
+      <option value="auto" title="Claude works on its own and asks only when something looks risky">Auto</option>
+      <option value="acceptEdits" title="Claude edits files freely, asks before running commands">Accept edits</option>
+      <option value="manual" title="Claude asks before editing files or running commands">Ask first</option>
+      <option value="plan" title="Claude only reads and plans; it asks before making any change">Plan only</option>
+    </select>
+  </label>
   <span class="status-pill" id="mediaPill" title="Click the page once so your AirPods button can control the mic"><span class="dot"></span><span class="txt">AirPods: click page to enable</span></span>
   <details class="settings">
     <summary class="btn icon-only" title="Settings"><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/></svg></summary>
@@ -313,7 +374,7 @@
       <button class="btn primary" type="submit">Start session</button>
       <button class="btn" type="button" id="newCancel">Cancel</button>
     </form>
-    <div id="groups" class="home-inner" style="gap:36px"></div>
+    <div id="groups" class="groups"></div>
   </div>
 </section>
 
@@ -321,22 +382,38 @@
 <section id="session" hidden>
   <main id="scroller"><div class="log" id="log"></div></main>
   <footer>
-    <div class="dock">
-      <div class="live" id="live"></div>
-      <div class="dock-row">
-        <div class="state"><span class="s1"><span class="led"></span><span id="stateLabel">Ready</span></span><span class="s2" id="stateHint">Press <kbd>Space</kbd> or your AirPods to talk</span></div>
-        <button id="talk" aria-label="Talk">
-          <svg class="mic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10a7 7 0 0 0 14 0"/><line x1="12" y1="17" x2="12" y2="22"/></svg>
-          <span class="bars"><i></i><i></i><i></i><i></i></span>
-        </button>
-        <form class="typebar" id="typebar">
-          <input type="text" id="typed" placeholder="Or type a message…" autocomplete="off">
-          <button type="submit" title="Send"><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg></button>
-        </form>
+    <div class="dock-wrap">
+      <button id="readAloud" type="button" aria-pressed="true" title="Turn reading aloud on or off (R)">
+        <svg class="ra-on" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5L6 9H3v6h3l5 4z"/><path d="M15.5 8.5a5 5 0 0 1 0 7M18.5 5.5a9 9 0 0 1 0 13"/></svg>
+        <svg class="ra-off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5L6 9H3v6h3l5 4z"/><path d="M16 9l6 6M22 9l-6 6"/></svg>
+        <span class="ra-label"><span>Read aloud</span><small id="raSub">On</small></span>
+      </button>
+      <div class="dock">
+        <div class="state"><span class="led"></span><b id="stateLabel">Ready</b><span class="sep">·</span><span id="stateHint">Press <kbd>Space</kbd> or your AirPods to talk</span></div>
+        <div class="live" id="live"></div>
+        <div class="tray" id="tray"></div>
+        <div class="compose">
+          <button id="talk" aria-label="Talk" title="Talk (Space)">
+            <svg class="mic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10a7 7 0 0 0 14 0"/><line x1="12" y1="17" x2="12" y2="22"/></svg>
+            <span class="bars"><i></i><i></i><i></i><i></i></span>
+          </button>
+          <form class="typebar" id="typebar">
+            <input type="text" id="typed" placeholder="Type a message, drop files, or paste an image…" autocomplete="off">
+            <button type="submit" title="Send"><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg></button>
+          </form>
+        </div>
       </div>
     </div>
   </footer>
 </section>
+
+<div class="drop-overlay" id="dropOverlay" hidden>
+  <div class="box">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.5l-8.6 8.6a5.5 5.5 0 0 1-7.8-7.8l8.6-8.6a3.7 3.7 0 0 1 5.2 5.2l-8.6 8.6a1.8 1.8 0 0 1-2.6-2.6l7.9-7.9"/></svg>
+    <h3>Drop to attach</h3>
+    <p>Images go straight to Claude. Other files are copied to a temporary folder and deleted after a day.</p>
+  </div>
+</div>
 
 <script>
 const $ = (id) => document.getElementById(id);
@@ -371,7 +448,7 @@ const TOOL_ICONS = { Bash: 'terminal', Read: 'file', Write: 'pencil', Edit: 'pen
 
 // ---------- settings (per-browser convenience; safe if storage is unavailable) ----------
 const settings = Object.assign(
-  { voice: '', rate: 1.05, lang: 'en-US', speakOn: true, announceTools: false, earcons: true, showHidden: false },
+  { voice: '', rate: 1.05, lang: 'en-US', speakOn: true, announceTools: false, earcons: true, showHidden: false, permMode: 'auto' },
   (() => { try { return JSON.parse(localStorage.getItem('voiceClaude') || '{}'); } catch { return {}; } })()
 );
 const saveSettings = () => { try { localStorage.setItem('voiceClaude', JSON.stringify(settings)); } catch {} };
@@ -383,9 +460,31 @@ $('announceTools').checked = settings.announceTools;
 $('earcons').checked = settings.earcons;
 $('rate').oninput = (e) => { settings.rate = +e.target.value; saveSettings(); };
 $('lang').onchange = (e) => { settings.lang = e.target.value.trim() || 'en-US'; saveSettings(); };
-$('speakOn').onchange = (e) => { settings.speakOn = e.target.checked; if (!e.target.checked) stopSpeaking(); saveSettings(); };
+// One setter keeps the big toggle in the dock and the Settings checkbox in sync.
+function setReadAloud(on) {
+  settings.speakOn = on;
+  saveSettings();
+  if (on) replyMuted = false; // turning it back on also undoes an Escape mute
+  else stopSpeaking();
+  $('speakOn').checked = on;
+  $('readAloud').setAttribute('aria-pressed', String(on));
+  $('raSub').textContent = on ? 'On' : 'Off';
+}
+$('speakOn').onchange = (e) => setReadAloud(e.target.checked);
+$('readAloud').onclick = () => setReadAloud(!settings.speakOn);
 $('announceTools').onchange = (e) => { settings.announceTools = e.target.checked; saveSettings(); };
 $('earcons').onchange = (e) => { settings.earcons = e.target.checked; saveSettings(); };
+// Permission mode is sent with every message, so a change applies from the next one.
+function setPermMode(mode) {
+  if (![...$('permMode').options].some((o) => o.value === mode)) mode = 'auto';
+  settings.permMode = mode;
+  saveSettings();
+  $('permMode').value = mode;
+  $('modePill').className = 'mode-pill' + (mode === 'plan' ? ' plan' : '');
+  $('modePill').title = `Permission mode: ${$('permMode').selectedOptions[0].title}. Applies from your next message.`;
+}
+$('permMode').onchange = (e) => setPermMode(e.target.value);
+setPermMode(settings.permMode);
 $('voice').onchange = (e) => { settings.voice = e.target.value; saveSettings(); };
 $('testVoice').onclick = () => { stopSpeaking(); speak('Hi! This is how I will sound when I read Claude\'s replies to you.'); };
 
@@ -431,7 +530,7 @@ function renderHome() {
   const hiddenCount = homeData.sessions.length - shown.length;
   const folderCount = new Set(shown.map((s) => s.cwd)).size;
   $('heroSub').textContent = `${shown.length} session${shown.length === 1 ? '' : 's'} across ${folderCount} folder${folderCount === 1 ? '' : 's'}. Pick one to continue by voice.`;
-  $('toggleHidden').innerHTML = settings.showHidden ? `${icon('eyeoff')}Hide removed` : `${icon('eyeoff')}Removed (${hiddenCount})`;
+  $('toggleHidden').textContent = settings.showHidden ? 'Hide removed' : 'Show removed';
   $('toggleHidden').hidden = hiddenCount === 0 && !settings.showHidden;
 
   const visible = homeData.sessions.filter((s) =>
@@ -457,9 +556,7 @@ function renderHome() {
         <span class="path">${esc(name)}</span>
         <span class="full" title="${esc(cwd)}">${esc(short)}</span>
         <span class="count">${list.length}</span>
-        <button class="btn" title="New session in this folder">${icon('mic')}New here</button>
       </div>`;
-    g.querySelector('.btn').onclick = () => go(`#new=${encodeURIComponent(cwd)}`);
     const grid = g.appendChild(el('div', 'grid'));
     for (const s of list) {
       const c = el('article', 'card' + (s.hidden ? ' is-hidden' : ''));
@@ -568,6 +665,7 @@ function openNew(dir, hash) {
 
 function leaveSession() {
   if (view.kind !== 'session') return;
+  attachments = []; renderTray();
   stopListening(false);
   interrupt();
 }
@@ -586,9 +684,30 @@ function append(node, parent = log) {
 }
 function addNote(text, warn) { append(el('div', 'note center' + (warn ? ' warn' : ''))).textContent = text; }
 
-function userCard(text) {
+function fileChip(name, title) {
+  const c = el('span', 'fchip', `${icon('file')}<span></span>`);
+  c.lastChild.textContent = name;
+  if (title) c.title = title;
+  return c;
+}
+// atts: attachments sent just now; pastImages: how many images an earlier prompt carried.
+function userCard(text, atts = [], pastImages = 0) {
   const m = el('div', 'msg user', `<div class="avatar you">${icon('user')}</div><div class="bubble"></div>`);
-  m.querySelector('.bubble').textContent = text;
+  const bubble = m.querySelector('.bubble');
+  // Copied files travel as an "Attached files:" list at the end of the prompt; show them as chips.
+  const [said, list] = String(text).split(/\n\nAttached files:\n/);
+  const paths = list ? list.split('\n').map((l) => l.replace(/^- /, '').trim()).filter(Boolean) : [];
+  const row = el('div', 'atts');
+  for (const a of atts) {
+    if (a.kind === 'image' && (a.thumb || a.file)) {
+      const img = row.appendChild(el('img'));
+      img.src = a.thumb || URL.createObjectURL(a.file); img.alt = a.name;
+    } else row.appendChild(fileChip(a.name, a.path));
+  }
+  for (const p of paths) row.appendChild(fileChip(p.split('/').pop(), p));
+  if (pastImages) row.appendChild(fileChip(`${pastImages} image${pastImages > 1 ? 's' : ''}`));
+  if (row.children.length) bubble.appendChild(row);
+  if (said.trim()) bubble.appendChild(document.createTextNode(said.trim()));
   return m;
 }
 function claudeCard() {
@@ -612,7 +731,7 @@ function renderHistory(messages) {
   const wrap = el('div', 'log past');
   let body = null;
   for (const m of messages) {
-    if (m.role === 'user') { wrap.appendChild(userCard(m.text)); body = null; continue; }
+    if (m.role === 'user') { wrap.appendChild(userCard(m.text, [], m.images)); body = null; continue; }
     if (!body) { const c = claudeCard(); wrap.appendChild(c.card); body = c.body; }
     if (m.role === 'assistant') body.appendChild(el('div', 'text', md(m.text)));
     else addTool(body, m.name, m.detail);
@@ -736,7 +855,15 @@ function stopSpeaking() {
 
 // Streamed text is spoken sentence by sentence as it arrives; code blocks are skipped.
 let sbuf = '', inFence = false;
+let replyMuted = false; // set by Escape: stay quiet for the rest of the current reply
+
+function muteReply() {
+  replyMuted = true;
+  stopSpeaking();
+}
+
 function pumpSpeech(flush) {
+  if (replyMuted) { sbuf = ''; return; }
   for (;;) {
     if (inFence) {
       const end = sbuf.indexOf('```');
@@ -840,8 +967,10 @@ function finishListening() {
 async function ask(text) {
   if (view.kind !== 'session') return;
   const target = view; // the session this turn belongs to
+  const atts = takeAttachments();
+  replyMuted = false;
   stopSpeaking();
-  append(userCard(text));
+  append(userCard(text, atts));
   const { card, body } = claudeCard();
   append(card);
   const status = body.appendChild(el('div', 'status', '<span class="dots"><i></i><i></i><i></i></span><span>Starting Claude…</span>'));
@@ -851,9 +980,17 @@ async function ask(text) {
   abortCtl = new AbortController();
   running = true; refreshState();
   try {
+    await Promise.all(atts.map((a) => a.ready));
+    const ok = atts.filter((a) => a.status === 'ready');
+    const images = ok.filter((a) => a.kind === 'image').map((a) => ({ mediaType: a.mediaType, data: a.data }));
+    const files = ok.filter((a) => a.kind === 'file').map((a) => a.path);
+    const failed = atts.filter((a) => a.status === 'error');
+    if (failed.length) body.insertBefore(el('div', 'note warn', icon('alert') + '<span></span>'), status).lastChild.textContent =
+      `Couldn't attach: ${failed.map((a) => `${a.name} (${a.error})`).join(', ')}`;
+    const where = target.id ? { sessionId: target.id } : { cwd: target.cwd };
     const res = await fetch('/api/ask', {
       method: 'POST', headers: { 'Content-Type': 'application/json' }, signal: abortCtl.signal,
-      body: JSON.stringify(target.id ? { text, sessionId: target.id } : { text, cwd: target.cwd }),
+      body: JSON.stringify({ text, images, files, permissionMode: settings.permMode, ...where }),
     });
     if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || res.statusText);
     const reader = res.body.getReader();
@@ -944,7 +1081,8 @@ let pendingPrompt = null; // { requestId, kind, box, ... }
 const norm = (t) => t.toLowerCase().replace(/[’']/g, '').replace(/[^a-z0-9 ]+/g, ' ').replace(/\s+/g, ' ').trim();
 function toolVerb(tool) {
   return ({ Bash: 'run a command', Edit: 'edit a file', MultiEdit: 'edit a file', Write: 'write a file', Read: 'read a file',
-    WebFetch: 'fetch a web page', WebSearch: 'search the web', NotebookEdit: 'edit a notebook' })[tool] || `use ${tool}`;
+    WebFetch: 'fetch a web page', WebSearch: 'search the web', NotebookEdit: 'edit a notebook',
+    ExitPlanMode: 'start working on this plan' })[tool] || `use ${tool}`;
 }
 
 async function respond(body) {
@@ -963,7 +1101,7 @@ function closePrompt(kind, text) {
 
 function showPermission(ev, body, before) {
   const i = ev.input || {};
-  const what = i.command || i.file_path || i.notebook_path || i.url || i.query || JSON.stringify(i, null, 2);
+  const what = i.plan || i.command || i.file_path || i.notebook_path || i.url || i.query || JSON.stringify(i, null, 2);
   const box = el('div', 'ask', `
     <div class="ask-head">${icon('shield')}<span>Claude wants to ${esc(toolVerb(ev.tool))}</span></div>
     ${ev.description && ev.description !== what ? `<div class="ask-desc">${esc(ev.description)}</div>` : ''}
@@ -980,7 +1118,9 @@ function showPermission(ev, body, before) {
   box.querySelectorAll('[data-a]').forEach((b) => b.onclick = () => decidePermission({ allow: b.dataset.a !== 'deny', always: b.dataset.a === 'always' }));
   refreshState();
   box.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
-  speak(`Claude wants to ${toolVerb(ev.tool)}: ${ev.description || ev.detail}. Should I allow it?`);
+  speak(ev.tool === 'ExitPlanMode'
+    ? 'Claude has a plan ready. It\'s on screen. Should it go ahead?'
+    : `Claude wants to ${toolVerb(ev.tool)}: ${ev.description || ev.detail}. Should I allow it?`);
 }
 
 function decidePermission({ allow, always, message }) {
@@ -1103,6 +1243,116 @@ function answerByVoice(text) {
   else p.answer(text);
 }
 
+// =====================================================================
+// Attachments: pasted or dropped images go to Claude directly. Other dropped files are copied
+// to a temporary folder on this Mac (deleted after a day) and Claude is given their paths.
+// =====================================================================
+let attachments = [];
+const INLINE_IMAGE = /^image\/(png|jpeg|gif|webp)$/;
+const fmtSize = (n) => (n < 1024 ? `${n} B` : n < 1048576 ? `${Math.round(n / 1024)} KB` : `${(n / 1048576).toFixed(1)} MB`);
+
+// Returns the image as base64, scaled down if it's too big for the API.
+async function imageToInline(file) {
+  const url = URL.createObjectURL(file);
+  try {
+    const img = await new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = () => rej(new Error('not a readable image')); i.src = url; });
+    const scale = Math.min(1, 2000 / Math.max(img.naturalWidth, img.naturalHeight));
+    if (scale === 1 && file.size <= 3.5e6 && INLINE_IMAGE.test(file.type)) {
+      const dataUrl = await new Promise((res) => { const r = new FileReader(); r.onload = () => res(r.result); r.readAsDataURL(file); });
+      return { mediaType: file.type, data: dataUrl.split(',')[1], thumb: dataUrl };
+    }
+    const c = document.createElement('canvas');
+    c.width = Math.round(img.naturalWidth * scale); c.height = Math.round(img.naturalHeight * scale);
+    c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+    let dataUrl = c.toDataURL('image/png');
+    if (dataUrl.length > 6.5e6) dataUrl = c.toDataURL('image/jpeg', 0.85);
+    return { mediaType: dataUrl.slice(5, dataUrl.indexOf(';')), data: dataUrl.split(',')[1], thumb: dataUrl };
+  } finally { URL.revokeObjectURL(url); }
+}
+
+async function uploadCopy(a) {
+  const res = await fetch('/api/upload?name=' + encodeURIComponent(a.name), { method: 'POST', body: a.file });
+  const j = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(j.error || 'upload failed');
+  Object.assign(a, { kind: 'file', path: j.path, status: 'ready' });
+}
+
+function addFiles(list) {
+  for (const file of list) {
+    const a = { name: file.name || 'image', size: file.size, file, status: 'busy' };
+    if (file.type.startsWith('image/') && file.type !== 'image/svg+xml') {
+      a.kind = 'image';
+      // Images the browser can't read (e.g. HEIC) are sent as files instead.
+      a.ready = imageToInline(file).then((r) => Object.assign(a, r, { status: 'ready' })).catch(() => { a.kind = 'file'; return uploadCopy(a); });
+    } else {
+      a.kind = 'file';
+      a.ready = uploadCopy(a);
+    }
+    a.ready = a.ready.catch((e) => { a.status = 'error'; a.error = e.message; }).finally(renderTray);
+    attachments.push(a);
+  }
+  renderTray();
+}
+
+function takeAttachments() { const a = attachments; attachments = []; renderTray(); return a; }
+
+function renderTray() {
+  const tray = $('tray');
+  tray.innerHTML = '';
+  for (const a of attachments) {
+    const chip = el('div', 'att' + (a.status === 'error' ? ' err' : a.status === 'busy' ? ' busy' : ''),
+      `${a.thumb ? '<img alt="">' : `<span class="ficon">${icon('file')}</span>`}<span class="meta"><b></b><span></span></span><button class="rm" title="Remove">${icon('x')}</button>`);
+    if (a.thumb) chip.querySelector('img').src = a.thumb;
+    chip.querySelector('b').textContent = a.name;
+    chip.querySelector('.meta span').textContent =
+      a.status === 'busy' ? (a.kind === 'image' ? 'Preparing…' : 'Copying…') : a.status === 'error' ? a.error : a.kind === 'image' ? 'Image' : fmtSize(a.size);
+    chip.title = a.path ? `Temporary copy, deleted after a day:\n${a.path}` : a.name;
+    chip.querySelector('.rm').onclick = () => { attachments = attachments.filter((x) => x !== a); renderTray(); };
+    tray.appendChild(chip);
+  }
+}
+
+// Drag and drop anywhere on a conversation; paste images from the clipboard.
+let dragDepth = 0;
+const hasFiles = (e) => [...(e.dataTransfer?.types || [])].includes('Files');
+document.addEventListener('dragenter', (e) => {
+  if (!hasFiles(e)) return;
+  e.preventDefault();
+  if (view.kind === 'session' && ++dragDepth === 1) $('dropOverlay').hidden = false;
+});
+document.addEventListener('dragleave', (e) => {
+  if (!hasFiles(e) || --dragDepth > 0) return;
+  dragDepth = 0; $('dropOverlay').hidden = true;
+});
+document.addEventListener('dragover', (e) => {
+  if (!hasFiles(e)) return;
+  e.preventDefault(); // otherwise the browser opens the file in the tab
+  e.dataTransfer.dropEffect = view.kind === 'session' ? 'copy' : 'none';
+});
+document.addEventListener('drop', (e) => {
+  if (!hasFiles(e)) return;
+  e.preventDefault();
+  dragDepth = 0; $('dropOverlay').hidden = true;
+  if (view.kind !== 'session') return;
+  const files = [], folders = [];
+  for (const item of e.dataTransfer.items) {
+    if (item.kind !== 'file') continue;
+    const entry = item.webkitGetAsEntry?.();
+    const f = item.getAsFile();
+    if (entry?.isDirectory) folders.push(entry.name); else if (f) files.push(f);
+  }
+  if (files.length) addFiles(files);
+  if (folders.length) addNote(`Folders can't be attached (${folders.join(', ')}). Drop the files inside, or say the folder's path.`, true);
+  $('typed').focus();
+});
+document.addEventListener('paste', (e) => {
+  if (view.kind !== 'session') return;
+  const files = [...(e.clipboardData?.files || [])];
+  if (!files.length) return; // plain text pastes normally
+  e.preventDefault();
+  addFiles(files);
+});
+
 function toolPhrase(name) {
   return ({ Bash: 'Running a command.', Read: 'Reading a file.', Edit: 'Editing a file.', Write: 'Writing a file.',
     Grep: 'Searching the code.', Glob: 'Looking for files.', WebSearch: 'Searching the web.', WebFetch: 'Fetching a page.',
@@ -1168,21 +1418,25 @@ document.addEventListener('keydown', armMediaKeys);
 // ---------- controls ----------
 $('talk').onclick = toggle;
 document.addEventListener('keydown', (e) => {
-  if (view.kind !== 'session' || e.target.closest('input, select, textarea, button, summary')) return;
+  if (view.kind !== 'session') return;
+  // Escape works wherever focus is (e.g. right after clicking the mic button).
+  if (e.code === 'Escape') { muteReply(); return; }
+  if (e.target.closest('input, select, textarea, button, summary')) return;
   if (e.code === 'Space') { e.preventDefault(); if (!e.repeat) toggle(); }
-  if (e.code === 'Escape') stopSpeaking();
+  if (e.code === 'KeyR' && !e.metaKey && !e.ctrlKey && !e.altKey) setReadAloud(!settings.speakOn);
 });
 $('typebar').onsubmit = (e) => {
   e.preventDefault();
   const t = $('typed').value.trim();
-  if (!t) return;
+  if (!t && !attachments.length) return;
   $('typed').value = '';
   stopListening(false);
-  if (pendingPrompt) return answerByVoice(t);
+  if (pendingPrompt) return t && answerByVoice(t);
   interrupt();
   ask(t);
 };
 
+setReadAloud(settings.speakOn);
 route();
 refreshState();
 </script>

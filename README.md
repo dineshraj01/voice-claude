@@ -10,6 +10,9 @@ node ~/Documents/voice-claude/server.js
 
 A Chrome tab opens at http://localhost:4317. Allow the microphone the first time.
 
+The server restarts itself whenever `server.js` changes, using Node's built-in `--watch`. Edits to `public/index.html`
+only need a browser reload. A restart stops any Claude turn that's in progress. Set `NO_WATCH=1` to turn auto-restart off.
+
 ## Home page
 
 Lists every Claude Code session on this Mac (from `~/.claude/projects`), grouped by directory, newest first.
@@ -34,6 +37,15 @@ Lists every Claude Code session on this Mac (from `~/.claude/projects`), grouped
 | `CLAUDE_MODEL` | Claude Code default | Passed to `--model` |
 | `PORT` | `4317` | Local port |
 | `NO_OPEN` | unset | Set to `1` if you don't want a browser tab opened |
+| `NO_WATCH` | unset | Set to `1` to turn off auto-restart on code changes |
+
+## Files and images
+
+- **Drag files** anywhere onto a conversation, or **paste** (⌘V) an image. They show in a tray above the text box until you send.
+- **Images** (pasted or dropped) go straight to Claude. No copy is saved.
+- **Other files** are copied to a temporary folder (`$TMPDIR/voice-claude-uploads`), and Claude is given each copy's path.
+  Copies are deleted after a day. The browser never sees the original file's location.
+- Folders can't be dropped; say the folder's path instead.
 
 ## When Claude needs you
 

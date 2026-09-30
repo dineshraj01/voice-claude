@@ -4,5 +4,5 @@
   "description": "Talk to Claude Code with your voice and hear its replies",
   "private": true,
   "bin": { "voice-claude": "server.js" },
-  "scripts": { "start": "node server.js" }
+  "scripts": { "start": "node server.js", "start:nowatch": "NO_WATCH=1 node server.js" }
 }

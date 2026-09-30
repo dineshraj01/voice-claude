@@ -11,6 +11,26 @@ const { spawn, execFile } = require('node:child_process');
 const { randomUUID } = require('node:crypto');
 
 const PORT = Number(process.env.PORT || 4317);
+
+// Auto-restart on code changes: unless told not to, re-run this file under `node --watch`,
+// which restarts the server whenever server.js changes. The page (public/index.html) is read
+// fresh on every request, so it only needs a browser reload, not a restart.
+if (!process.env.VOICE_CLAUDE_WATCHED && process.env.NO_WATCH !== '1') {
+  const watcher = spawn(process.execPath, ['--watch', '--watch-preserve-output', __filename, ...process.argv.slice(2)], {
+    stdio: 'inherit', env: { ...process.env, VOICE_CLAUDE_WATCHED: '1' },
+  });
+  watcher.on('exit', (code) => process.exit(code ?? 0));
+  process.on('SIGINT', () => {});  // Ctrl+C reaches the whole group; let the watcher shut down first
+  process.on('SIGTERM', () => watcher.kill('SIGTERM'));
+  // Open the browser once, when the server first comes up, not on every restart.
+  if (process.env.NO_OPEN !== '1') {
+    const url = `http://localhost:${PORT}`;
+    const tryOpen = (n) => fetch(url + '/api/sessions').then(() => execFile('open', [url], () => {}))
+      .catch(() => n > 0 && setTimeout(() => tryOpen(n - 1), 250));
+    tryOpen(40);
+  }
+  return;
+}
 const DEFAULT_DIR = path.resolve(process.argv[2] || process.env.CLAUDE_CWD || os.homedir());
 const PERMISSION_MODE = process.env.CLAUDE_PERMISSION_MODE || 'auto';
 const MODEL = process.env.CLAUDE_MODEL || '';
@@ -18,6 +38,11 @@ const CLAUDE_BIN = process.env.CLAUDE_BIN || 'claude';
 const CLAUDE_HOME = process.env.CLAUDE_CONFIG_DIR || path.join(os.homedir(), '.claude');
 const PROJECTS_DIR = path.join(CLAUDE_HOME, 'projects');
 const STATE_FILE = path.join(__dirname, 'state.json');
+// Files dropped into the chat are copied here so Claude can read them, and deleted after a day.
+const UPLOAD_DIR = path.join(os.tmpdir(), 'voice-claude-uploads');
+const UPLOAD_TTL_MS = 24 * 60 * 60 * 1000;
+const UPLOAD_MAX_BYTES = 200 * 1024 * 1024;
+const IMAGE_TYPES = new Set(['image/png', 'image/jpeg', 'image/gif', 'image/webp']);
 const INDEX = path.join(__dirname, 'public', 'index.html');
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -115,7 +140,12 @@ function history(file, limit = 120) {
   for (const rec of readRecords(file)) {
     if (rec.isSidechain) continue;
     const text = promptText(rec);
-    if (text) { items.push({ role: 'user', text }); continue; }
+    if (text) {
+      const c = rec.message?.content;
+      const images = Array.isArray(c) ? c.filter((b) => b.type === 'image').length : 0;
+      items.push({ role: 'user', text, images });
+      continue;
+    }
     if (rec.type === 'assistant') {
       for (const b of rec.message?.content || []) {
         if (b.type === 'text' && b.text.trim()) items.push({ role: 'assistant', text: b.text });
@@ -127,6 +157,46 @@ function history(file, limit = 120) {
   let start = Math.max(0, items.length - limit);
   while (start > 0 && items[start].role !== 'user') start--;
   return items.slice(start);
+}
+
+// ---------- dropped files ----------
+function cleanUploads() {
+  let dirs = [];
+  try { dirs = fs.readdirSync(UPLOAD_DIR); } catch { return; }
+  for (const d of dirs) {
+    const p = path.join(UPLOAD_DIR, d);
+    try { if (Date.now() - fs.statSync(p).mtimeMs > UPLOAD_TTL_MS) fs.rmSync(p, { recursive: true, force: true }); } catch {}
+  }
+}
+
+// Streams the request body to UPLOAD_DIR/<random>/<name> and resolves with the saved path.
+function saveUpload(req, rawName) {
+  const name = path.basename(String(rawName || 'file')).replace(/[\x00-\x1f]/g, '_') || 'file';
+  const dir = path.join(UPLOAD_DIR, randomUUID().slice(0, 8));
+  fs.mkdirSync(dir, { recursive: true });
+  const dest = path.join(dir, name);
+  return new Promise((resolve, reject) => {
+    let bytes = 0;
+    const out = fs.createWriteStream(dest);
+    req.on('data', (c) => {
+      bytes += c.length;
+      if (bytes > UPLOAD_MAX_BYTES) { req.destroy(); out.destroy(); fs.rmSync(dir, { recursive: true, force: true }); reject(new Error('file is larger than 200 MB')); }
+    });
+    req.pipe(out);
+    out.on('finish', () => resolve(dest));
+    out.on('error', reject);
+  });
+}
+
+// The user message: images inline, copied files listed by path, then what was said.
+function buildContent(text, images = [], files = []) {
+  let body = String(text || '').trim() || (files.length || images.length ? 'Please take a look at the attached.' : '');
+  if (files.length) body += `\n\nAttached files:\n${files.map((f) => `- ${f}`).join('\n')}`;
+  if (!images.length) return body;
+  return [
+    ...images.map((i) => ({ type: 'image', source: { type: 'base64', media_type: i.mediaType, data: i.data } })),
+    { type: 'text', text: body },
+  ];
 }
 
 // ---------- running Claude Code ----------
@@ -141,14 +211,14 @@ function cancelCurrent() {
   current.kill('SIGINT');
 }
 
-function ask({ text, sessionId, cwd }, res) {
+function ask({ content, sessionId, cwd }, res) {
   cancelCurrent();
 
   // stream-json input + --permission-prompt-tool stdio lets Claude Code route permission
   // prompts and AskUserQuestion to us as control requests, like the Agent SDK does.
   const args = ['-p', '--input-format', 'stream-json', '--output-format', 'stream-json', '--verbose',
     '--include-partial-messages', '--permission-prompt-tool', 'stdio',
-    '--permission-mode', PERMISSION_MODE, '--append-system-prompt', VOICE_PROMPT];
+    '--permission-mode', PERMISSION_MODE, '--append-system-prompt', VOICE_PROMPT, '--add-dir', UPLOAD_DIR];
   if (sessionId) args.push('--resume', sessionId);
   if (MODEL) args.push('--model', MODEL);
 
@@ -159,7 +229,7 @@ function ask({ text, sessionId, cwd }, res) {
   child.write = write;
   child.stdin.on('error', () => {});
   write({ type: 'control_request', request_id: randomUUID(), request: { subtype: 'initialize' } });
-  write({ type: 'user', message: { role: 'user', content: text } });
+  write({ type: 'user', message: { role: 'user', content } });
 
   res.writeHead(200, { 'Content-Type': 'application/x-ndjson', 'Cache-Control': 'no-cache' });
   const send = (obj) => { if (!res.writableEnded) res.write(JSON.stringify(obj) + '\n'); };
@@ -310,18 +380,28 @@ const server = http.createServer(async (req, res) => {
       return json(200, { ok: true });
     }
     if (route === 'POST /api/ask') {
-      const { text, sessionId, cwd } = await readJson(req);
-      if (!text || !String(text).trim()) return json(400, { error: 'empty prompt' });
+      const { text, sessionId, cwd, images = [], files = [] } = await readJson(req);
+      const imgs = (Array.isArray(images) ? images : []).filter((i) => IMAGE_TYPES.has(i?.mediaType) && typeof i.data === 'string');
+      // Only paths this server saved may be attached.
+      const paths = (Array.isArray(files) ? files : []).map(String)
+        .filter((f) => path.resolve(f).startsWith(UPLOAD_DIR + path.sep) && fs.existsSync(f));
+      const content = buildContent(text, imgs, paths);
+      if (!content.length) return json(400, { error: 'empty prompt' });
       if (sessionId) {
         // Resume in the session's own directory; Claude Code looks sessions up per project.
         const s = UUID.test(sessionId) && findSession(sessionId);
         if (!s) return json(404, { error: 'session not found' });
         if (!isDir(s.cwd)) return json(400, { error: `directory no longer exists: ${s.cwd}` });
-        return ask({ text: String(text), sessionId, cwd: s.cwd }, res);
+        return ask({ content, sessionId, cwd: s.cwd }, res);
       }
       const dir = path.resolve(String(cwd || DEFAULT_DIR).replace(/^~(?=$|\/)/, os.homedir()));
       if (!isDir(dir)) return json(400, { error: `not a directory: ${dir}` });
-      return ask({ text: String(text), cwd: dir }, res);
+      return ask({ content, cwd: dir }, res);
+    }
+    if (route === 'POST /api/upload') {
+      fs.mkdirSync(UPLOAD_DIR, { recursive: true });
+      const saved = await saveUpload(req, url.searchParams.get('name'));
+      return json(200, { path: saved });
     }
     if (route === 'POST /api/respond') {
       const { requestId, allow, always, message, answers } = await readJson(req);
@@ -353,10 +433,18 @@ const server = http.createServer(async (req, res) => {
   }
 });
 
+cleanUploads();
+setInterval(cleanUploads, 60 * 60 * 1000).unref();
+
 server.listen(PORT, '127.0.0.1', () => {
   const url = `http://localhost:${PORT}`;
   console.log(`Voice Claude running at ${url}`);
   console.log(`  sessions from:   ${PROJECTS_DIR}`);
   console.log(`  permission mode: ${PERMISSION_MODE}`);
-  if (process.env.NO_OPEN !== '1') execFile('open', [url], () => {});
+  if (process.env.NO_OPEN !== '1' && !process.env.VOICE_CLAUDE_WATCHED) execFile('open', [url], () => {});
 });
+
+// On restart (or Ctrl+C), stop any Claude turn still running so it isn't left behind.
+for (const sig of ['SIGTERM', 'SIGINT']) {
+  process.on(sig, () => { cancelCurrent(); server.close(); process.exit(0); });
+}
