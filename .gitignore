@@ -1,0 +1,5 @@
+# Your personal list of hidden sessions
+state.json
+
+node_modules/
+.DS_Store

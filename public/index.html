@@ -1,0 +1,1190 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Voice Claude</title>
+<style>
+  :root {
+    --bg: #f4f2ee;
+    --bg-grad: radial-gradient(1200px 600px at 10% -10%, #fbe9df 0%, transparent 60%), radial-gradient(900px 500px at 110% 0%, #e6ecfb 0%, transparent 55%);
+    --surface: #ffffff; --surface-2: #faf9f7; --glass: rgba(255,255,255,.72);
+    --ink: #1c1b19; --ink-2: #4a4843; --muted: #8a867d; --line: rgba(28,27,25,.08); --line-2: rgba(28,27,25,.14);
+    --accent: #d4663f; --accent-2: #e8875c; --accent-soft: #fbeae2; --accent-ink: #fff; --ask: #d18a00; --ask-soft: #fff6e2;
+    --listen: #e5484d; --work: #4f7cf0; --speak: #2fa36b; --warn: #b26a00; --warn-soft: #fff4e0;
+    --code: #f5f3ef; --chip: #f2f0eb;
+    --shadow-sm: 0 1px 2px rgba(20,18,14,.06), 0 1px 1px rgba(20,18,14,.04);
+    --shadow: 0 1px 2px rgba(20,18,14,.05), 0 6px 16px -4px rgba(20,18,14,.08), 0 18px 40px -16px rgba(20,18,14,.14);
+    --shadow-lg: 0 2px 4px rgba(20,18,14,.05), 0 12px 28px -6px rgba(20,18,14,.12), 0 30px 60px -20px rgba(20,18,14,.22);
+    --radius: 18px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #141312;
+      --bg-grad: radial-gradient(1200px 600px at 10% -10%, rgba(212,102,63,.14) 0%, transparent 60%), radial-gradient(900px 500px at 110% 0%, rgba(79,124,240,.12) 0%, transparent 55%);
+      --surface: #1f1e1c; --surface-2: #252421; --glass: rgba(31,30,28,.75);
+      --ink: #efece6; --ink-2: #c9c5bc; --muted: #8f8b82; --line: rgba(255,255,255,.07); --line-2: rgba(255,255,255,.12);
+      --accent: #e0774f; --accent-2: #ef9670; --accent-soft: rgba(224,119,79,.14);
+      --warn: #f0b04a; --warn-soft: rgba(240,176,74,.1); --ask: #f0b04a; --ask-soft: rgba(240,176,74,.1);
+      --code: #2a2926; --chip: #2a2926;
+      --shadow-sm: 0 1px 2px rgba(0,0,0,.4);
+      --shadow: 0 1px 2px rgba(0,0,0,.35), 0 10px 28px -8px rgba(0,0,0,.55);
+      --shadow-lg: 0 2px 4px rgba(0,0,0,.4), 0 24px 56px -16px rgba(0,0,0,.7);
+    }
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; margin: 0; }
+  body {
+    background: var(--bg-grad), var(--bg); background-attachment: fixed;
+    color: var(--ink); font: 15.5px/1.6 -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", sans-serif;
+    -webkit-font-smoothing: antialiased; display: flex; flex-direction: column;
+  }
+  [hidden] { display: none !important; }
+  button { font: inherit; cursor: pointer; color: inherit; }
+  svg.i { width: 16px; height: 16px; flex-shrink: 0; }
+  ::selection { background: var(--accent-soft); }
+
+  /* ---------- top bar ---------- */
+  header {
+    position: sticky; top: 0; z-index: 10; display: flex; align-items: center; gap: 12px;
+    padding: 12px 20px; background: var(--glass); backdrop-filter: saturate(1.6) blur(16px); -webkit-backdrop-filter: saturate(1.6) blur(16px);
+    border-bottom: 1px solid var(--line);
+  }
+  .brand { display: flex; align-items: center; gap: 10px; font-weight: 650; font-size: 16px; letter-spacing: -.01em; }
+  .logo { width: 30px; height: 30px; border-radius: 9px; display: grid; place-items: center; color: #fff;
+    background: linear-gradient(135deg, var(--accent-2), var(--accent)); box-shadow: 0 4px 12px -2px rgba(212,102,63,.5); }
+  .logo svg { width: 17px; height: 17px; }
+  .title-block { min-width: 0; flex: 1; display: grid; gap: 1px; }
+  .title-block .t { font-weight: 650; font-size: 15px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; letter-spacing: -.01em; }
+  .crumb { display: flex; align-items: center; gap: 6px; color: var(--muted); font-size: 12.5px; min-width: 0; }
+  .crumb span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: ui-monospace, "SF Mono", Menlo, monospace; }
+  .crumb svg.i { width: 13px; height: 13px; }
+  .spacer { flex: 1; }
+  .btn { display: inline-flex; align-items: center; gap: 7px; border: 1px solid var(--line-2); background: var(--surface); border-radius: 10px; padding: 7px 12px; font-size: 13.5px; font-weight: 550; box-shadow: var(--shadow-sm); transition: background .15s, transform .15s, box-shadow .15s; white-space: nowrap; }
+  .btn:hover { background: var(--surface-2); }
+  .btn:active { transform: scale(.97); }
+  .btn.primary { background: linear-gradient(180deg, var(--accent-2), var(--accent)); color: var(--accent-ink); border-color: transparent; box-shadow: 0 1px 2px rgba(0,0,0,.1), 0 6px 16px -6px rgba(212,102,63,.7); }
+  .btn.primary:hover { filter: brightness(1.05); }
+  .btn.icon-only { padding: 7px; }
+  .status-pill { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; padding: 5px 10px; border-radius: 99px; background: var(--surface); border: 1px solid var(--line); color: var(--muted); white-space: nowrap; box-shadow: var(--shadow-sm); }
+  .status-pill .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--muted); opacity: .5; }
+  .status-pill.on { color: var(--speak); }
+  .status-pill.on .dot { background: var(--speak); opacity: 1; box-shadow: 0 0 0 3px rgba(47,163,107,.18); }
+
+  details.settings { position: relative; }
+  details.settings summary { list-style: none; }
+  details.settings summary::-webkit-details-marker { display: none; }
+  .settings-panel { position: absolute; right: 0; top: 44px; z-index: 20; width: min(360px, calc(100vw - 32px)); background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 18px; box-shadow: var(--shadow-lg); display: grid; gap: 14px; font-size: 14px; }
+  .settings-panel h3 { margin: 0; font-size: 14px; }
+  .settings-panel label.field { display: grid; gap: 6px; font-weight: 550; }
+  .settings-panel .row { display: flex; align-items: center; gap: 10px; color: var(--ink-2); }
+  .settings-panel select, .settings-panel input[type=text] { font: inherit; font-weight: 400; padding: 8px 10px; border-radius: 10px; border: 1px solid var(--line-2); background: var(--surface-2); color: var(--ink); width: 100%; }
+  .settings-panel input[type=range] { accent-color: var(--accent); width: 100%; }
+  .settings-panel input[type=checkbox] { accent-color: var(--accent); width: 16px; height: 16px; }
+  .hint { color: var(--muted); font-size: 12.5px; font-weight: 400; line-height: 1.45; }
+
+  /* ---------- home ---------- */
+  #home { flex: 1; overflow-y: auto; padding: 36px 20px 64px; }
+  .home-inner { max-width: 1120px; margin: 0 auto; display: grid; grid-template-columns: minmax(0, 1fr); gap: 28px; }
+  .hero { display: flex; align-items: flex-end; gap: 16px; flex-wrap: wrap; }
+  .hero h2 { margin: 0; font-size: 30px; line-height: 1.15; letter-spacing: -.025em; font-weight: 700; }
+  .hero p { margin: 6px 0 0; color: var(--muted); }
+  .hero .grow { flex: 1; min-width: 240px; }
+  .toolbar { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+  .search { flex: 1; min-width: 220px; display: flex; align-items: center; gap: 10px; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 0 14px; box-shadow: var(--shadow-sm); transition: box-shadow .15s, border-color .15s; }
+  .search:focus-within { border-color: var(--accent); box-shadow: 0 0 0 4px var(--accent-soft); }
+  .search svg { color: var(--muted); }
+  .search input { flex: 1; border: none; outline: none; background: transparent; font: inherit; color: var(--ink); padding: 11px 0; min-width: 0; }
+  .newform { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 14px; box-shadow: var(--shadow); }
+  .newform .label { font-weight: 600; font-size: 14px; display: flex; align-items: center; gap: 8px; }
+  .newform input { flex: 1; min-width: 220px; font: 14px ui-monospace, "SF Mono", Menlo, monospace; padding: 9px 12px; border-radius: 10px; border: 1px solid var(--line-2); background: var(--surface-2); color: var(--ink); outline: none; }
+  .newform input:focus { border-color: var(--accent); box-shadow: 0 0 0 4px var(--accent-soft); }
+
+  .group { display: grid; gap: 12px; }
+  .group-head { display: flex; align-items: center; gap: 10px; min-width: 0; }
+  .folder-badge { width: 28px; height: 28px; border-radius: 8px; display: grid; place-items: center; color: #fff; flex-shrink: 0; font-size: 12px; font-weight: 700; box-shadow: var(--shadow-sm); }
+  .group-head .path { font-weight: 650; font-size: 15px; letter-spacing: -.01em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .group-head .full { color: var(--muted); font-size: 12px; font-family: ui-monospace, "SF Mono", Menlo, monospace; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+  .group-head .count { font-size: 12px; color: var(--muted); background: var(--chip); padding: 1px 8px; border-radius: 99px; flex-shrink: 0; }
+  .group-head .btn { margin-left: auto; padding: 5px 10px; font-size: 12.5px; flex-shrink: 0; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); gap: 16px; }
+  .card {
+    position: relative; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius);
+    padding: 18px 18px 14px; display: grid; gap: 10px; cursor: pointer; box-shadow: var(--shadow);
+    transition: transform .2s cubic-bezier(.2,.8,.2,1), box-shadow .2s, border-color .2s; min-height: 168px; grid-template-rows: auto 1fr auto;
+  }
+  .card:hover { transform: translateY(-3px); box-shadow: var(--shadow-lg); border-color: var(--line-2); }
+  .card:active { transform: translateY(-1px) scale(.995); }
+  .card .t { font-weight: 650; font-size: 16px; line-height: 1.35; letter-spacing: -.01em; padding-right: 28px;
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .card .lp { color: var(--ink-2); font-size: 14px; line-height: 1.5; border-left: 2px solid var(--line-2); padding-left: 10px;
+    display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; align-self: start; overflow-wrap: anywhere; }
+  .card .foot { display: flex; align-items: center; gap: 8px; color: var(--muted); font-size: 12.5px; padding-top: 10px; border-top: 1px solid var(--line); }
+  .card .foot .tag { display: inline-flex; align-items: center; gap: 5px; }
+  .card .foot .tag svg { width: 13px; height: 13px; }
+  .card .foot .open { margin-left: auto; color: var(--accent); font-weight: 600; display: inline-flex; align-items: center; gap: 4px; opacity: 0; transform: translateX(-4px); transition: opacity .2s, transform .2s; }
+  .card:hover .foot .open { opacity: 1; transform: none; }
+  .card .x { position: absolute; top: 12px; right: 12px; width: 30px; height: 30px; border-radius: 9px; border: 1px solid transparent; background: transparent; color: var(--muted); display: grid; place-items: center; opacity: 0; transition: opacity .15s, background .15s; }
+  .card:hover .x, .card .x:focus-visible { opacity: 1; }
+  .card .x:hover { background: var(--chip); color: var(--ink); border-color: var(--line); }
+  .card.is-hidden { opacity: .6; box-shadow: var(--shadow-sm); border-style: dashed; }
+  .card.is-hidden .x { opacity: 1; width: auto; padding: 0 10px; font-size: 12.5px; font-weight: 600; color: var(--accent); }
+  @media (hover: none) { .card .x { opacity: 1; } .card .foot .open { opacity: 1; transform: none; } }
+  .home-empty { text-align: center; padding: 70px 20px; color: var(--muted); background: var(--surface); border: 1px dashed var(--line-2); border-radius: var(--radius); }
+  .home-empty b { color: var(--ink); }
+  .skeleton { height: 168px; border-radius: var(--radius); background: linear-gradient(90deg, var(--surface) 0%, var(--surface-2) 50%, var(--surface) 100%); background-size: 200% 100%; animation: shimmer 1.2s infinite; box-shadow: var(--shadow-sm); }
+  @keyframes shimmer { to { background-position: -200% 0; } }
+
+  /* ---------- session ---------- */
+  #session { flex: 1; display: flex; flex-direction: column; min-height: 0; }
+  main { flex: 1; overflow-y: auto; padding: 28px 20px 24px; }
+  .log { max-width: 800px; margin: 0 auto; display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; }
+  .msg { display: flex; gap: 12px; align-items: flex-start; animation: rise .35s cubic-bezier(.2,.8,.2,1) both; }
+  @keyframes rise { from { opacity: 0; transform: translateY(8px); } }
+  .past .msg { animation: none; }
+  .avatar { width: 32px; height: 32px; border-radius: 10px; display: grid; place-items: center; flex-shrink: 0; font-size: 13px; font-weight: 700; box-shadow: var(--shadow-sm); margin-top: 2px; }
+  .avatar svg { width: 17px; height: 17px; }
+  .avatar.claude { background: linear-gradient(135deg, var(--accent-2), var(--accent)); color: #fff; }
+  .avatar.you { background: var(--surface); color: var(--ink-2); border: 1px solid var(--line); }
+  .bubble { min-width: 0; flex: 1; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 14px 18px; box-shadow: var(--shadow); }
+  .bubble .who { font-size: 12.5px; font-weight: 650; color: var(--muted); margin-bottom: 4px; display: flex; align-items: center; gap: 8px; }
+  .msg.user { flex-direction: row-reverse; }
+  .msg.user .bubble { flex: 0 1 auto; max-width: 82%; background: linear-gradient(180deg, var(--accent-2), var(--accent)); color: var(--accent-ink); border-color: transparent; box-shadow: 0 1px 2px rgba(0,0,0,.08), 0 10px 24px -10px rgba(212,102,63,.65); white-space: pre-wrap; overflow-wrap: anywhere; border-top-right-radius: 6px; }
+  .msg.claude .bubble { border-top-left-radius: 6px; display: grid; grid-template-columns: minmax(0, 1fr); gap: 10px; }
+  .msg.claude .bubble > .who { margin-bottom: -4px; }
+  .past .msg.user .bubble { opacity: .92; }
+  .text { overflow-wrap: anywhere; color: var(--ink); }
+  .text p { margin: 0 0 .65em; } .text p:last-child { margin-bottom: 0; }
+  .text code { background: var(--code); padding: 1.5px 6px; border-radius: 6px; font-size: .87em; font-family: ui-monospace, "SF Mono", Menlo, monospace; border: 1px solid var(--line); }
+  .text pre { background: var(--code); padding: 12px 14px; border-radius: 12px; overflow-x: auto; margin: 0 0 .65em; border: 1px solid var(--line); font-size: 13px; line-height: 1.5; }
+  .text pre code { background: none; padding: 0; border: none; }
+  .text ul { margin: 0 0 .65em; padding-left: 1.3em; }
+  .text li { margin: .15em 0; }
+  .text a { color: var(--accent); text-decoration-thickness: 1px; text-underline-offset: 2px; }
+  .tools { display: flex; flex-wrap: wrap; gap: 6px; min-width: 0; }
+  .tool { display: inline-flex; align-items: center; gap: 7px; max-width: 100%; background: var(--surface-2); border: 1px solid var(--line); border-radius: 10px; padding: 5px 10px; font-size: 12.5px; color: var(--muted); }
+  .tool svg { width: 13px; height: 13px; color: var(--ink-2); }
+  .tool b { color: var(--ink); font-weight: 600; }
+  .tool span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 12px; }
+  .note { font-size: 12.5px; color: var(--muted); display: flex; align-items: center; gap: 6px; }
+  .note.warn { color: var(--warn); background: var(--warn-soft); border-radius: 10px; padding: 8px 12px; }
+  .note.center { justify-content: center; }
+  .divider { display: flex; align-items: center; gap: 14px; font-size: 12px; color: var(--muted); margin: 8px 0; }
+  .divider::before, .divider::after { content: ""; flex: 1; height: 1px; background: var(--line-2); }
+  kbd { display: inline-block; border: 1px solid var(--line-2); border-bottom-width: 2px; border-radius: 6px; padding: 0 6px; font: 12px ui-monospace, "SF Mono", Menlo, monospace; background: var(--surface); color: var(--ink-2); }
+  .status { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--muted); }
+  .dots { display: inline-flex; gap: 3px; }
+  .dots i { width: 5px; height: 5px; border-radius: 50%; background: var(--accent); animation: blink 1.2s infinite both; }
+  .dots i:nth-child(2) { animation-delay: .15s; } .dots i:nth-child(3) { animation-delay: .3s; }
+  @keyframes blink { 0%, 80%, 100% { opacity: .25; transform: scale(.8); } 40% { opacity: 1; transform: none; } }
+  /* Claude asking for permission or an answer */
+  .ask { border: 1px solid color-mix(in srgb, var(--ask) 45%, transparent); background: var(--ask-soft); border-radius: 14px; padding: 14px; display: grid; gap: 12px; animation: rise .35s cubic-bezier(.2,.8,.2,1) both; }
+  .ask-head { display: flex; align-items: center; gap: 8px; font-weight: 650; }
+  .ask-head svg { color: var(--ask); width: 18px; height: 18px; }
+  .ask-desc { color: var(--ink-2); font-size: 14px; margin-top: -6px; }
+  .ask-cmd { margin: 0; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; font: 13px/1.5 ui-monospace, "SF Mono", Menlo, monospace; white-space: pre-wrap; overflow-wrap: anywhere; max-height: 180px; overflow-y: auto; }
+  .ask-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+  .ask-hint { font-size: 12.5px; color: var(--muted); }
+  .q { display: grid; gap: 8px; }
+  .q-text { font-weight: 600; display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap; }
+  .q-tag { font-size: 11.5px; font-weight: 650; text-transform: uppercase; letter-spacing: .04em; color: var(--ask); }
+  .opts { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 8px; }
+  .opt { text-align: left; display: grid; gap: 2px; background: var(--surface); border: 1px solid var(--line-2); border-radius: 12px; padding: 10px 12px; box-shadow: var(--shadow-sm); transition: border-color .15s, box-shadow .15s, transform .15s; }
+  .opt:hover { border-color: var(--ask); transform: translateY(-1px); }
+  .opt b { font-weight: 600; display: flex; gap: 8px; align-items: center; }
+  .opt b i { font-style: normal; font-size: 11px; color: var(--muted); border: 1px solid var(--line-2); border-radius: 6px; padding: 0 5px; }
+  .opt span { font-size: 13px; color: var(--muted); }
+  .opt.sel { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+  .ask.done { background: var(--surface-2); border-color: var(--line); }
+  .ask.done .opt, .ask.done .ask-actions, .ask.done .ask-hint { display: none; }
+  .ask.done .opt.sel { display: grid; }
+  .ask-result { font-size: 13.5px; font-weight: 600; display: flex; gap: 6px; align-items: center; }
+  .ask-result.yes { color: var(--speak); } .ask-result.no { color: var(--listen); } .ask-result.gone { color: var(--muted); font-weight: 500; }
+  .welcome { text-align: center; padding: 10vh 20px 0; display: grid; justify-items: center; gap: 10px; color: var(--muted); }
+  .welcome .big { width: 64px; height: 64px; border-radius: 20px; display: grid; place-items: center; color: #fff; background: linear-gradient(135deg, var(--accent-2), var(--accent)); box-shadow: 0 16px 36px -12px rgba(212,102,63,.7); margin-bottom: 6px; }
+  .welcome .big svg { width: 30px; height: 30px; }
+  .welcome h3 { margin: 0; color: var(--ink); font-size: 22px; letter-spacing: -.02em; }
+  .welcome p { margin: 0; }
+
+  /* ---------- floating voice dock ---------- */
+  footer { padding: 0 20px 20px; }
+  .dock { max-width: 800px; margin: 0 auto; background: var(--glass); backdrop-filter: saturate(1.6) blur(18px); -webkit-backdrop-filter: saturate(1.6) blur(18px); border: 1px solid var(--line); border-radius: 24px; box-shadow: var(--shadow-lg); padding: 14px; display: grid; gap: 10px; }
+  .live { text-align: center; color: var(--muted); font-size: 15px; padding: 2px 8px; min-height: 0; }
+  .live:empty { display: none; }
+  .live .final { color: var(--ink); }
+  .dock-row { display: flex; align-items: center; gap: 14px; }
+  .state { flex: 1; min-width: 0; display: grid; gap: 2px; padding-left: 6px; }
+  .state .s1 { font-weight: 650; font-size: 14.5px; display: flex; align-items: center; gap: 8px; }
+  .state .s2 { font-size: 12.5px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .state .s1 .led { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); opacity: .5; }
+  body[data-state=listening] .state .led { background: var(--listen); opacity: 1; animation: blink 1s infinite; }
+  body[data-state=working] .state .led { background: var(--work); opacity: 1; }
+  body[data-state=speaking] .state .led { background: var(--speak); opacity: 1; }
+  body[data-state=asking] .state .led { background: var(--ask); opacity: 1; animation: blink 1.2s infinite; }
+  #talk { position: relative; width: 64px; height: 64px; border-radius: 50%; border: none; flex-shrink: 0; color: #fff; display: grid; place-items: center;
+    background: linear-gradient(180deg, var(--accent-2), var(--accent)); box-shadow: 0 2px 4px rgba(0,0,0,.12), 0 12px 28px -8px rgba(212,102,63,.8); transition: transform .15s, background .25s, box-shadow .25s; }
+  #talk:hover { transform: scale(1.04); }
+  #talk:active { transform: scale(.95); }
+  #talk svg { width: 26px; height: 26px; position: relative; z-index: 1; }
+  #talk::after { content: ""; position: absolute; inset: -5px; border-radius: 50%; border: 2px solid transparent; }
+  body[data-state=listening] #talk { background: linear-gradient(180deg, #f06368, var(--listen)); box-shadow: 0 12px 28px -8px rgba(229,72,77,.8); }
+  body[data-state=listening] #talk::after { border-color: rgba(229,72,77,.5); animation: ring 1.4s infinite; }
+  body[data-state=working] #talk { background: linear-gradient(180deg, #6b93f5, var(--work)); box-shadow: 0 12px 28px -8px rgba(79,124,240,.8); }
+  body[data-state=working] #talk::after { border-color: rgba(79,124,240,.25); border-top-color: var(--work); animation: spin 1s linear infinite; }
+  body[data-state=speaking] #talk { background: linear-gradient(180deg, #45bb82, var(--speak)); box-shadow: 0 12px 28px -8px rgba(47,163,107,.8); }
+  body[data-state=asking] #talk { background: linear-gradient(180deg, #f0b34a, var(--ask)); box-shadow: 0 12px 28px -8px rgba(209,138,0,.8); }
+  body[data-state=asking] #talk::after { border-color: rgba(209,138,0,.5); animation: ring 1.8s infinite; }
+  @keyframes ring { from { transform: scale(.95); opacity: 1; } to { transform: scale(1.35); opacity: 0; } }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .bars { display: none; gap: 3px; align-items: center; height: 22px; }
+  .bars i { width: 3px; height: 100%; border-radius: 3px; background: currentColor; animation: bar .9s ease-in-out infinite; }
+  .bars i:nth-child(2) { animation-delay: .15s; } .bars i:nth-child(3) { animation-delay: .3s; } .bars i:nth-child(4) { animation-delay: .45s; }
+  @keyframes bar { 0%, 100% { transform: scaleY(.3); } 50% { transform: scaleY(1); } }
+  body[data-state=speaking] #talk .mic, body[data-state=listening] #talk .mic { display: none; }
+  body[data-state=speaking] #talk .bars, body[data-state=listening] #talk .bars { display: flex; }
+  .typebar { display: flex; align-items: center; gap: 6px; flex: 1.4; min-width: 0; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 4px 4px 4px 14px; transition: border-color .15s, box-shadow .15s; }
+  .typebar:focus-within { border-color: var(--accent); box-shadow: 0 0 0 4px var(--accent-soft); }
+  .typebar input { flex: 1; min-width: 0; border: none; outline: none; background: transparent; font: inherit; color: var(--ink); padding: 7px 0; }
+  .typebar button { width: 34px; height: 34px; border-radius: 10px; border: none; background: var(--chip); color: var(--ink-2); display: grid; place-items: center; }
+  .typebar button:hover { background: var(--accent); color: #fff; }
+  @media (max-width: 640px) {
+    header { padding: 10px 16px; }
+    #home { padding: 24px 16px 48px; }
+    .hero h2 { font-size: 24px; }
+    main { padding: 20px 16px; }
+    footer { padding: 0 12px 12px; }
+    .dock-row { flex-wrap: wrap; }
+    .typebar { order: 3; flex-basis: 100%; }
+    .msg.user .bubble { max-width: 90%; }
+    .avatar { display: none; }
+    .status-pill .txt { display: none; }
+  }
+</style>
+</head>
+<body data-state="idle">
+<header>
+  <button class="btn icon-only" id="back" hidden title="All sessions"><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></button>
+  <div class="brand" id="brand">
+    <div class="logo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M4 10v4M8 7v10M12 4v16M16 8v8M20 11v2"/></svg></div>
+    Voice Claude
+  </div>
+  <div class="title-block" id="sessionTitle" hidden>
+    <span class="t" id="sTitle"></span>
+    <span class="crumb"><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg><span id="sMeta"></span></span>
+  </div>
+  <span class="spacer" id="spacer"></span>
+  <span class="status-pill" id="mediaPill" title="Click the page once so your AirPods button can control the mic"><span class="dot"></span><span class="txt">AirPods: click page to enable</span></span>
+  <details class="settings">
+    <summary class="btn icon-only" title="Settings"><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/></svg></summary>
+    <div class="settings-panel">
+      <h3>Voice settings</h3>
+      <label class="field">Voice
+        <select id="voice"></select>
+        <span class="hint">For the most natural sound, download a Premium voice in System Settings → Accessibility → Spoken Content → System Voice → Manage Voices (e.g. Ava or Zoe Premium), then reload.</span>
+      </label>
+      <label class="field">Speed <input type="range" id="rate" min="0.7" max="1.6" step="0.05"></label>
+      <label class="field">Speech recognition language <input type="text" id="lang" placeholder="en-US"></label>
+      <label class="row"><input type="checkbox" id="speakOn"><span>Read Claude's replies aloud</span></label>
+      <label class="row"><input type="checkbox" id="announceTools"><span>Announce tool calls ("Running a command…")</span></label>
+      <label class="row"><input type="checkbox" id="earcons"><span>Chime when the mic opens and closes</span></label>
+      <button class="btn" id="testVoice" type="button">Test voice</button>
+    </div>
+  </details>
+</header>
+
+<!-- ---------- home: all sessions ---------- -->
+<section id="home">
+  <div class="home-inner">
+    <div class="hero">
+      <div class="grow">
+        <h2>Your sessions</h2>
+        <p id="heroSub">Loading…</p>
+      </div>
+      <button class="btn primary" id="newBtn"><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>New session</button>
+    </div>
+    <div class="toolbar">
+      <label class="search"><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg><input type="search" id="search" placeholder="Search by title, prompt or folder"></label>
+      <button class="btn" id="toggleHidden"></button>
+    </div>
+    <form class="newform" id="newForm" hidden>
+      <span class="label"><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>Start in</span>
+      <input type="text" id="newDir" list="dirList" placeholder="~/Documents/my-project" autocomplete="off">
+      <datalist id="dirList"></datalist>
+      <button class="btn primary" type="submit">Start session</button>
+      <button class="btn" type="button" id="newCancel">Cancel</button>
+    </form>
+    <div id="groups" class="home-inner" style="gap:36px"></div>
+  </div>
+</section>
+
+<!-- ---------- one session ---------- -->
+<section id="session" hidden>
+  <main id="scroller"><div class="log" id="log"></div></main>
+  <footer>
+    <div class="dock">
+      <div class="live" id="live"></div>
+      <div class="dock-row">
+        <div class="state"><span class="s1"><span class="led"></span><span id="stateLabel">Ready</span></span><span class="s2" id="stateHint">Press <kbd>Space</kbd> or your AirPods to talk</span></div>
+        <button id="talk" aria-label="Talk">
+          <svg class="mic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10a7 7 0 0 0 14 0"/><line x1="12" y1="17" x2="12" y2="22"/></svg>
+          <span class="bars"><i></i><i></i><i></i><i></i></span>
+        </button>
+        <form class="typebar" id="typebar">
+          <input type="text" id="typed" placeholder="Or type a message…" autocomplete="off">
+          <button type="submit" title="Send"><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg></button>
+        </form>
+      </div>
+    </div>
+  </footer>
+</section>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+function el(tag, cls, html) { const e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e; }
+
+// Small inline icon set (Lucide-style strokes).
+const ICON_PATHS = {
+  terminal: '<path d="M4 17l6-6-6-6M12 19h8"/>',
+  file: '<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/>',
+  pencil: '<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/>',
+  search: '<circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/>',
+  globe: '<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/>',
+  bot: '<rect x="4" y="8" width="16" height="12" rx="3"/><path d="M12 4v4M9 14h.01M15 14h.01"/>',
+  wrench: '<path d="M14.7 6.3a4 4 0 0 0-5.4 5.4L3 18l3 3 6.3-6.3a4 4 0 0 0 5.4-5.4l-2.5 2.5-2.4-.6-.6-2.4z"/>',
+  chat: '<path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"/>',
+  clock: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+  arrow: '<path d="M5 12h14M13 6l6 6-6 6"/>',
+  eyeoff: '<path d="M3 3l18 18M10.6 10.6a2 2 0 0 0 2.8 2.8M9.9 5.1A10 10 0 0 1 12 5c6 0 9.5 7 9.5 7a17 17 0 0 1-2.9 3.7M6.6 6.6A17 17 0 0 0 2.5 12S6 19 12 19a10 10 0 0 0 4.2-.9"/>',
+  alert: '<path d="M12 9v4M12 17h.01"/><path d="M10.3 3.9L2 18a2 2 0 0 0 1.7 3h16.6a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/>',
+  sparkle: '<path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z"/>',
+  user: '<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>',
+  shield: '<path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/><path d="M9 12l2 2 4-4"/>',
+  help: '<circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 0 1 4.9.8c0 1.7-2.4 2.2-2.4 3.7M12 17h.01"/>',
+  check: '<path d="M5 12l5 5 9-10"/>',
+  x: '<path d="M6 6l12 12M18 6L6 18"/>',
+  mic: '<rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10a7 7 0 0 0 14 0"/><line x1="12" y1="17" x2="12" y2="22"/>',
+};
+const icon = (name) => `<svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${ICON_PATHS[name]}</svg>`;
+const TOOL_ICONS = { Bash: 'terminal', Read: 'file', Write: 'pencil', Edit: 'pencil', MultiEdit: 'pencil', NotebookEdit: 'pencil',
+  Grep: 'search', Glob: 'search', WebSearch: 'globe', WebFetch: 'globe', Task: 'bot', Agent: 'bot' };
+
+// ---------- settings (per-browser convenience; safe if storage is unavailable) ----------
+const settings = Object.assign(
+  { voice: '', rate: 1.05, lang: 'en-US', speakOn: true, announceTools: false, earcons: true, showHidden: false },
+  (() => { try { return JSON.parse(localStorage.getItem('voiceClaude') || '{}'); } catch { return {}; } })()
+);
+const saveSettings = () => { try { localStorage.setItem('voiceClaude', JSON.stringify(settings)); } catch {} };
+
+$('rate').value = settings.rate;
+$('lang').value = settings.lang;
+$('speakOn').checked = settings.speakOn;
+$('announceTools').checked = settings.announceTools;
+$('earcons').checked = settings.earcons;
+$('rate').oninput = (e) => { settings.rate = +e.target.value; saveSettings(); };
+$('lang').onchange = (e) => { settings.lang = e.target.value.trim() || 'en-US'; saveSettings(); };
+$('speakOn').onchange = (e) => { settings.speakOn = e.target.checked; if (!e.target.checked) stopSpeaking(); saveSettings(); };
+$('announceTools').onchange = (e) => { settings.announceTools = e.target.checked; saveSettings(); };
+$('earcons').onchange = (e) => { settings.earcons = e.target.checked; saveSettings(); };
+$('voice').onchange = (e) => { settings.voice = e.target.value; saveSettings(); };
+$('testVoice').onclick = () => { stopSpeaking(); speak('Hi! This is how I will sound when I read Claude\'s replies to you.'); };
+
+// =====================================================================
+// Home: every Claude Code session on this machine, grouped by directory
+// =====================================================================
+let homeData = { sessions: [], home: '', defaultDir: '' };
+const tilde = (p) => (homeData.home && p.startsWith(homeData.home) ? '~' + p.slice(homeData.home.length) : p);
+
+// A stable colour per folder so groups are easy to tell apart.
+function folderColor(p) {
+  let h = 0;
+  for (const c of p) h = (h * 31 + c.charCodeAt(0)) >>> 0;
+  const hue = h % 360;
+  return `linear-gradient(135deg, hsl(${hue} 70% 62%), hsl(${(hue + 25) % 360} 65% 48%))`;
+}
+
+function ago(ms) {
+  const s = (Date.now() - ms) / 1000;
+  if (s < 60) return 'just now';
+  if (s < 3600) return `${Math.floor(s / 60)}m ago`;
+  if (s < 86400) return `${Math.floor(s / 3600)}h ago`;
+  if (s < 86400 * 7) return `${Math.floor(s / 86400)}d ago`;
+  return new Date(ms).toLocaleDateString(undefined, { day: 'numeric', month: 'short' });
+}
+
+async function loadHome() {
+  if (!homeData.sessions.length) $('groups').innerHTML = '<div class="grid">' + '<div class="skeleton"></div>'.repeat(3) + '</div>';
+  try {
+    homeData = await (await fetch('/api/sessions')).json();
+  } catch {
+    $('groups').innerHTML = '<div class="home-empty">Can\'t reach the Voice Claude server. Is it still running?</div>';
+    return;
+  }
+  const dirs = [...new Set([homeData.defaultDir, ...homeData.sessions.map((s) => s.cwd)])];
+  $('dirList').innerHTML = dirs.map((d) => `<option value="${esc(tilde(d))}">`).join('');
+  renderHome();
+}
+
+function renderHome() {
+  const q = $('search').value.trim().toLowerCase();
+  const shown = homeData.sessions.filter((s) => !s.hidden);
+  const hiddenCount = homeData.sessions.length - shown.length;
+  const folderCount = new Set(shown.map((s) => s.cwd)).size;
+  $('heroSub').textContent = `${shown.length} session${shown.length === 1 ? '' : 's'} across ${folderCount} folder${folderCount === 1 ? '' : 's'}. Pick one to continue by voice.`;
+  $('toggleHidden').innerHTML = settings.showHidden ? `${icon('eyeoff')}Hide removed` : `${icon('eyeoff')}Removed (${hiddenCount})`;
+  $('toggleHidden').hidden = hiddenCount === 0 && !settings.showHidden;
+
+  const visible = homeData.sessions.filter((s) =>
+    (settings.showHidden || !s.hidden) &&
+    (!q || `${s.title} ${s.lastPrompt} ${s.cwd}`.toLowerCase().includes(q)));
+
+  const groups = new Map(); // cwd -> sessions, ordered by most recent activity
+  for (const s of visible) { if (!groups.has(s.cwd)) groups.set(s.cwd, []); groups.get(s.cwd).push(s); }
+
+  const root = $('groups');
+  root.innerHTML = '';
+  if (!visible.length) {
+    root.innerHTML = `<div class="home-empty">${q ? 'No sessions match your search.' : 'No sessions here yet. Start one with <b>New session</b>.'}</div>`;
+    return;
+  }
+  for (const [cwd, list] of groups) {
+    const short = tilde(cwd);
+    const name = short.split('/').filter(Boolean).pop() || short;
+    const g = el('section', 'group');
+    g.innerHTML = `
+      <div class="group-head">
+        <span class="folder-badge" style="background:${folderColor(cwd)}">${esc(name[0].toUpperCase())}</span>
+        <span class="path">${esc(name)}</span>
+        <span class="full" title="${esc(cwd)}">${esc(short)}</span>
+        <span class="count">${list.length}</span>
+        <button class="btn" title="New session in this folder">${icon('mic')}New here</button>
+      </div>`;
+    g.querySelector('.btn').onclick = () => go(`#new=${encodeURIComponent(cwd)}`);
+    const grid = g.appendChild(el('div', 'grid'));
+    for (const s of list) {
+      const c = el('article', 'card' + (s.hidden ? ' is-hidden' : ''));
+      c.tabIndex = 0;
+      c.innerHTML = `
+        <div class="t">${esc(s.title)}</div>
+        <div class="lp">${esc(s.lastPrompt)}</div>
+        <div class="foot">
+          <span class="tag">${icon('clock')}${ago(s.updated)}</span>
+          <span class="tag">${icon('chat')}${s.prompts}</span>
+          <span class="open">Open ${icon('arrow')}</span>
+        </div>
+        <button class="x" title="${s.hidden ? 'Put back on the home page' : 'Remove from the home page (the session itself is kept)'}">${s.hidden ? 'Restore' : icon('eyeoff')}</button>`;
+      c.onclick = () => go(`#s=${s.id}`);
+      c.onkeydown = (e) => { if (e.key === 'Enter') go(`#s=${s.id}`); };
+      c.querySelector('.x').onclick = async (e) => {
+        e.stopPropagation();
+        await fetch(`/api/sessions/${s.id}/${s.hidden ? 'unhide' : 'hide'}`, { method: 'POST' });
+        s.hidden = !s.hidden;
+        renderHome();
+      };
+      grid.appendChild(c);
+    }
+    root.appendChild(g);
+  }
+}
+
+$('search').oninput = renderHome;
+$('toggleHidden').onclick = () => { settings.showHidden = !settings.showHidden; saveSettings(); renderHome(); };
+$('newBtn').onclick = () => { $('newForm').hidden = false; $('newDir').value = tilde(homeData.defaultDir || ''); $('newDir').focus(); $('newDir').select(); };
+$('newCancel').onclick = () => { $('newForm').hidden = true; };
+$('newForm').onsubmit = (e) => {
+  e.preventDefault();
+  let dir = $('newDir').value.trim();
+  if (!dir) return;
+  if (dir.startsWith('~')) dir = homeData.home + dir.slice(1);
+  $('newForm').hidden = true;
+  go(`#new=${encodeURIComponent(dir)}`);
+};
+
+// =====================================================================
+// Routing: #  (home)   #s=<session id>   #new=<directory>
+// =====================================================================
+let view = { kind: 'home' }; // or { kind: 'session', id, cwd }
+
+function go(hash) { location.hash = hash; }
+window.addEventListener('hashchange', route);
+
+async function route() {
+  const h = location.hash.slice(1);
+  if (h === view.hash) return;
+  leaveSession();
+  const [key, val] = [h.split('=')[0], decodeURIComponent(h.slice(h.indexOf('=') + 1))];
+  if (key === 's' && val) return openSession(val, h);
+  if (key === 'new' && val) return openNew(val, h);
+  view = { kind: 'home', hash: h };
+  showView('home');
+  loadHome();
+}
+
+function showView(which) {
+  $('home').hidden = which !== 'home';
+  $('session').hidden = which !== 'session';
+  $('back').hidden = which !== 'session';
+  $('brand').hidden = which === 'session';
+  $('sessionTitle').hidden = which !== 'session';
+  $('spacer').hidden = which === 'session';
+  document.title = which === 'session' ? `${$('sTitle').textContent} · Voice Claude` : 'Voice Claude';
+}
+$('back').onclick = () => go('');
+
+function setSessionHeader(title, cwd, id) {
+  $('sTitle').textContent = title;
+  $('sMeta').textContent = `${tilde(cwd)}${id ? '  ·  ' + id.slice(0, 8) : '  ·  new'}`;
+  $('sMeta').title = cwd;
+}
+
+async function openSession(id, hash) {
+  view = { kind: 'session', id, cwd: null, hash };
+  resetLog();
+  setSessionHeader('Loading…', '', id);
+  showView('session');
+  const res = await fetch(`/api/sessions/${id}`);
+  if (view.hash !== hash) return;
+  if (!res.ok) { setSessionHeader('Session not found', '', id); addNote('This session could not be found.', true); return; }
+  const s = await res.json();
+  if (!homeData.home) homeData = await (await fetch('/api/sessions')).json();
+  view.cwd = s.cwd;
+  setSessionHeader(s.title, s.cwd, id);
+  showView('session');
+  renderHistory(s.messages);
+}
+
+function openNew(dir, hash) {
+  view = { kind: 'session', id: null, cwd: dir, hash };
+  resetLog();
+  setSessionHeader('New session', dir, null);
+  showView('session');
+  if (!homeData.home) fetch('/api/sessions').then((r) => r.json()).then((d) => { homeData = d; if (!view.id) setSessionHeader('New session', dir, null); });
+  log.appendChild(el('div', 'welcome', `
+    <div class="big">${ICON_PATHS.mic ? `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${ICON_PATHS.mic}</svg>` : ''}</div>
+    <h3>What should we work on?</h3>
+    <p>Press <kbd>Space</kbd>, the mic button, or your AirPods, then speak.</p>
+    <p>Press again to send. Press while Claude talks to interrupt. <kbd>Esc</kbd> stops the voice.</p>`));
+}
+
+function leaveSession() {
+  if (view.kind !== 'session') return;
+  stopListening(false);
+  interrupt();
+}
+
+// =====================================================================
+// Conversation: each message is a card
+// =====================================================================
+const log = $('log'), scroller = $('scroller');
+function resetLog() { log.innerHTML = ''; $('live').innerHTML = ''; }
+function append(node, parent = log) {
+  log.querySelector('.welcome')?.remove();
+  const atBottom = scroller.scrollHeight - scroller.scrollTop - scroller.clientHeight < 120;
+  parent.appendChild(node);
+  if (atBottom) scroller.scrollTop = scroller.scrollHeight;
+  return node;
+}
+function addNote(text, warn) { append(el('div', 'note center' + (warn ? ' warn' : ''))).textContent = text; }
+
+function userCard(text) {
+  const m = el('div', 'msg user', `<div class="avatar you">${icon('user')}</div><div class="bubble"></div>`);
+  m.querySelector('.bubble').textContent = text;
+  return m;
+}
+function claudeCard() {
+  const m = el('div', 'msg claude', `<div class="avatar claude">${icon('sparkle')}</div><div class="bubble"><div class="who">Claude</div></div>`);
+  return { card: m, body: m.querySelector('.bubble') };
+}
+// Consecutive tool calls share one row of chips.
+function addTool(body, name, detail, before = null) {
+  const prev = before ? before.previousElementSibling : body.lastElementChild;
+  const row = prev?.classList.contains('tools') ? prev : body.insertBefore(el('div', 'tools'), before);
+  const chip = el('div', 'tool', `${icon(TOOL_ICONS[name] || 'wrench')}<b></b><span></span>`);
+  chip.querySelector('b').textContent = name;
+  // Long absolute paths: keep the last two segments, full path on hover.
+  const shown = /^\/\S+$/.test(detail || '') && detail.split('/').length > 3 ? '…/' + detail.split('/').slice(-2).join('/') : detail;
+  chip.querySelector('span').textContent = shown || '';
+  chip.title = `${name} ${detail || ''}`;
+  row.appendChild(chip);
+}
+
+function renderHistory(messages) {
+  const wrap = el('div', 'log past');
+  let body = null;
+  for (const m of messages) {
+    if (m.role === 'user') { wrap.appendChild(userCard(m.text)); body = null; continue; }
+    if (!body) { const c = claudeCard(); wrap.appendChild(c.card); body = c.body; }
+    if (m.role === 'assistant') body.appendChild(el('div', 'text', md(m.text)));
+    else addTool(body, m.name, m.detail);
+  }
+  log.appendChild(wrap);
+  log.appendChild(el('div', 'divider', messages.length ? 'Continue by voice' : 'Start talking'));
+  scroller.scrollTop = scroller.scrollHeight;
+}
+
+function md(src) {
+  const inline = (s) => esc(s)
+    .replace(/`([^`]+)`/g, '<code>$1</code>')
+    .replace(/\*\*([^*]+)\*\*/g, '<b>$1</b>')
+    .replace(/(^|[\s(])\*([^*\s][^*]*)\*(?=[\s.,;:!?)]|$)/g, '$1<i>$2</i>')
+    .replace(/\[([^\]]+)\]\((https?:[^)\s]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
+  const parts = src.split(/```[^\n]*\n?/);
+  return parts.map((part, i) => {
+    if (i % 2) return `<pre><code>${esc(part.replace(/\n$/, ''))}</code></pre>`;
+    return part.split(/\n{2,}/).filter((p) => p.trim()).map((p) => {
+      // Group consecutive list lines into <ul>; everything else becomes a paragraph.
+      let html = '', para = [], items = [];
+      const flushPara = () => { if (para.length) html += `<p>${para.join('<br>')}</p>`; para = []; };
+      const flushList = () => { if (items.length) html += `<ul>${items.map((i) => `<li>${i}</li>`).join('')}</ul>`; items = []; };
+      for (const l of p.split('\n')) {
+        const li = l.match(/^\s*(?:[-*+]|\d+\.)\s+(.*)$/);
+        if (li) { flushPara(); items.push(inline(li[1])); }
+        else if (l.trim()) { flushList(); para.push(inline(l.replace(/^#{1,6}\s*/, ''))); }
+      }
+      flushPara(); flushList();
+      return html;
+    }).join('');
+  }).join('');
+}
+
+// =====================================================================
+// Voice state
+// =====================================================================
+let listening = false, running = false, speakingCount = 0;
+let abortCtl = null;
+
+function refreshState() {
+  const s = listening ? 'listening' : speakingCount > 0 ? 'speaking' : pendingPrompt ? 'asking' : running ? 'working' : 'idle';
+  document.body.dataset.state = s;
+  $('stateLabel').textContent = { listening: 'Listening', speaking: 'Speaking', asking: 'Claude needs your answer', working: 'Claude is working', idle: 'Ready' }[s];
+  $('stateHint').innerHTML = {
+    listening: 'Press again to send',
+    speaking: pendingPrompt ? 'Press to answer' : 'Press to interrupt · <kbd>Esc</kbd> to mute',
+    asking: 'Press to answer by voice, or tap an option',
+    working: 'Press to interrupt',
+    idle: 'Press <kbd>Space</kbd> or your AirPods to talk',
+  }[s];
+  if (mediaArmed && 'MediaMetadata' in window) {
+    navigator.mediaSession.metadata = new MediaMetadata({ title: 'Voice Claude', artist: view.kind === 'session' ? $('stateLabel').textContent : 'Pick a session' });
+  }
+}
+
+// ---------- text to speech ----------
+let voices = [];
+function voiceScore(v) {
+  let s = 0;
+  if (/premium/i.test(v.name)) s += 40;
+  if (/enhanced/i.test(v.name)) s += 30;
+  if (/natural|neural|siri/i.test(v.name)) s += 25;
+  if (/google/i.test(v.name)) s += 10;
+  if (v.lang === settings.lang) s += 8;
+  else if (v.lang.split('-')[0] === settings.lang.split('-')[0]) s += 5;
+  else s -= 100;
+  if (v.localService) s += 2;
+  return s;
+}
+function loadVoices() {
+  voices = speechSynthesis.getVoices().slice().sort((a, b) => voiceScore(b) - voiceScore(a));
+  const sel = $('voice');
+  sel.innerHTML = '';
+  for (const v of voices.filter((v) => voiceScore(v) > -50)) {
+    const o = document.createElement('option');
+    o.value = v.name; o.textContent = `${v.name} (${v.lang})`;
+    sel.appendChild(o);
+  }
+  if (!settings.voice || !voices.some((v) => v.name === settings.voice)) settings.voice = sel.options[0]?.value || '';
+  sel.value = settings.voice;
+}
+speechSynthesis.onvoiceschanged = loadVoices;
+loadVoices();
+
+// Turn markdown-ish text into something pleasant to hear.
+function forSpeech(s) {
+  return s
+    .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
+    .replace(/https?:\/\/\S+/g, 'a link')
+    .replace(/`([^`]+)`/g, '$1')
+    .replace(/[*_]{1,3}([^*_]+)[*_]{1,3}/g, '$1')
+    .replace(/^\s{0,3}#{1,6}\s*/gm, '')
+    .replace(/^\s*[-*+]\s+/gm, '')
+    .replace(/^\s*\|.*\|\s*$/gm, '')
+    .replace(/[`*#|>]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+const liveUtterances = new Set(); // hold references so Chrome doesn't drop onend events
+function speak(raw) {
+  if (!settings.speakOn) return;
+  const text = forSpeech(raw);
+  if (!/[a-z0-9]/i.test(text)) return;
+  const u = new SpeechSynthesisUtterance(text);
+  const v = voices.find((v) => v.name === settings.voice);
+  if (v) { u.voice = v; u.lang = v.lang; }
+  u.rate = settings.rate;
+  const done = () => { if (liveUtterances.delete(u)) { speakingCount--; refreshState(); } };
+  u.onend = done; u.onerror = done;
+  liveUtterances.add(u); speakingCount++; refreshState();
+  speechSynthesis.speak(u);
+}
+function stopSpeaking() {
+  speechSynthesis.cancel();
+  liveUtterances.clear(); speakingCount = 0;
+  sbuf = ''; inFence = false;
+  refreshState();
+}
+
+// Streamed text is spoken sentence by sentence as it arrives; code blocks are skipped.
+let sbuf = '', inFence = false;
+function pumpSpeech(flush) {
+  for (;;) {
+    if (inFence) {
+      const end = sbuf.indexOf('```');
+      if (end < 0) { if (flush) { sbuf = ''; inFence = false; } return; }
+      sbuf = sbuf.slice(end + 3); inFence = false;
+      continue;
+    }
+    const fence = sbuf.indexOf('```');
+    const m = /[.!?:;](?=\s)|\n/.exec(sbuf);
+    if (fence >= 0 && (!m || fence <= m.index)) {
+      speak(sbuf.slice(0, fence));
+      speak('The code is on screen.');
+      sbuf = sbuf.slice(fence + 3); inFence = true;
+      continue;
+    }
+    if (m) {
+      const cut = m.index + m[0].length;
+      speak(sbuf.slice(0, cut)); sbuf = sbuf.slice(cut);
+      continue;
+    }
+    if (flush) { speak(sbuf); sbuf = ''; }
+    return;
+  }
+}
+
+// ---------- earcons ----------
+let actx;
+function chime(up) {
+  if (!settings.earcons) return;
+  try {
+    actx = actx || new AudioContext();
+    const t = actx.currentTime;
+    [0, 0.09].forEach((dt, i) => {
+      const o = actx.createOscillator(), g = actx.createGain();
+      o.frequency.value = (up ? [660, 990] : [880, 587])[i];
+      g.gain.setValueAtTime(0.0001, t + dt);
+      g.gain.exponentialRampToValueAtTime(0.18, t + dt + 0.02);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + dt + 0.12);
+      o.connect(g).connect(actx.destination); o.start(t + dt); o.stop(t + dt + 0.14);
+    });
+  } catch {}
+}
+
+// ---------- speech recognition ----------
+const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+let rec = null, heard = '', interim = '', sendAfterStop = false, stopTimer = null;
+
+function renderLive() { $('live').innerHTML = heard || interim ? `<span class="final">${esc(heard)}</span>${esc(interim)}` : ''; }
+
+function startListening() {
+  if (!SR) { addNote('This browser has no speech recognition. Use Chrome (or Safari).', true); return; }
+  heard = ''; interim = ''; renderLive();
+  listening = true; sendAfterStop = false; refreshState();
+  chime(true);
+  rec = new SR();
+  rec.continuous = true; rec.interimResults = true; rec.lang = settings.lang;
+  rec.onresult = (e) => {
+    interim = '';
+    for (let i = e.resultIndex; i < e.results.length; i++) {
+      const r = e.results[i];
+      if (r.isFinal) heard += r[0].transcript.trim() + ' ';
+      else interim += r[0].transcript;
+    }
+    renderLive();
+  };
+  rec.onerror = (e) => {
+    if (e.error === 'not-allowed' || e.error === 'service-not-allowed') {
+      listening = false; refreshState();
+      addNote('Microphone access was blocked. Allow the mic for this page in the browser address bar.', true);
+    }
+  };
+  rec.onend = () => {
+    if (listening) { try { rec.start(); } catch {} return; } // browser stopped on silence; keep going
+    finishListening();
+  };
+  setTimeout(() => { try { if (listening) rec.start(); } catch {} }, 120); // let the chime play first
+}
+
+function stopListening(send) {
+  if (!listening) return;
+  listening = false; sendAfterStop = send; refreshState();
+  chime(false);
+  try { rec.stop(); } catch {}
+  clearTimeout(stopTimer);
+  stopTimer = setTimeout(finishListening, 1500); // fallback if onend never fires
+}
+
+function finishListening() {
+  clearTimeout(stopTimer);
+  if (!sendAfterStop) return;
+  sendAfterStop = false;
+  const text = (heard + interim).trim();
+  heard = ''; interim = ''; renderLive();
+  if (!text) return addNote('Didn\'t catch anything.');
+  if (pendingPrompt) answerByVoice(text); else ask(text);
+}
+
+// =====================================================================
+// Talking to Claude Code through the server
+// =====================================================================
+async function ask(text) {
+  if (view.kind !== 'session') return;
+  const target = view; // the session this turn belongs to
+  stopSpeaking();
+  append(userCard(text));
+  const { card, body } = claudeCard();
+  append(card);
+  const status = body.appendChild(el('div', 'status', '<span class="dots"><i></i><i></i><i></i></span><span>Starting Claude…</span>'));
+  const setStatus = (t) => { status.lastChild.textContent = t; };
+  let seg = null, segText = '';
+
+  abortCtl = new AbortController();
+  running = true; refreshState();
+  try {
+    const res = await fetch('/api/ask', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, signal: abortCtl.signal,
+      body: JSON.stringify(target.id ? { text, sessionId: target.id } : { text, cwd: target.cwd }),
+    });
+    if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || res.statusText);
+    const reader = res.body.getReader();
+    const dec = new TextDecoder();
+    let buf = '';
+    for (;;) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      buf += dec.decode(value, { stream: true });
+      let nl;
+      while ((nl = buf.indexOf('\n')) >= 0) {
+        const line = buf.slice(0, nl); buf = buf.slice(nl + 1);
+        if (!line.trim()) continue;
+        const ev = JSON.parse(line);
+        switch (ev.type) {
+          case 'session':
+            if (!target.id) {
+              // A brand-new session now has an id: make the URL point at it.
+              target.id = ev.id;
+              target.hash = `s=${ev.id}`;
+              history.replaceState(null, '', `#s=${ev.id}`);
+              setSessionHeader(text.split('\n')[0].slice(0, 120), ev.cwd, ev.id);
+              showView('session');
+            }
+            setStatus('Thinking…');
+            break;
+          case 'status': setStatus(ev.text); break;
+          case 'text':
+            if (!seg) { seg = body.insertBefore(el('div', 'text'), status); segText = ''; }
+            segText += ev.text; seg.innerHTML = md(segText);
+            sbuf += ev.text; pumpSpeech(false);
+            setStatus('Writing…');
+            scroller.scrollTop = scroller.scrollHeight;
+            break;
+          case 'text_end': seg = null; pumpSpeech(true); setStatus('Working…'); break;
+          case 'tool':
+            addTool(body, ev.name, ev.detail, status); seg = null;
+            setStatus(`Running ${ev.name}…`);
+            if (settings.announceTools) speak(toolPhrase(ev.name));
+            scroller.scrollTop = scroller.scrollHeight;
+            break;
+          case 'permission':
+            pumpSpeech(true);
+            showPermission(ev, body, status);
+            setStatus('Waiting for you…');
+            break;
+          case 'question':
+            pumpSpeech(true);
+            showQuestion(ev, body, status);
+            setStatus('Waiting for you…');
+            break;
+          case 'prompt_cancel':
+            if (pendingPrompt?.requestId === ev.requestId) closePrompt('gone', 'No longer needed');
+            break;
+          case 'done':
+            pumpSpeech(true);
+            status.remove();
+            if (ev.cancelled) body.appendChild(el('div', 'note', 'Interrupted'));
+            else if (!ev.ok) { body.appendChild(el('div', 'note warn', icon('alert') + '<span></span>')).lastChild.textContent = 'Error: ' + (ev.error || 'unknown'); speak('Something went wrong. The error is on screen.'); }
+            if (ev.denials?.length) {
+              body.appendChild(el('div', 'note warn', icon('alert') + '<span></span>')).lastChild.textContent =
+                `Blocked by auto mode: ${ev.denials.join(' · ')}`;
+              speak('Heads up, auto mode blocked some actions.');
+            }
+            if (ev.durationMs) body.appendChild(el('div', 'note', `${icon('clock')}${(ev.durationMs / 1000).toFixed(1)}s${ev.cost ? ` · $${ev.cost.toFixed(3)}` : ''}`));
+            break;
+        }
+      }
+    }
+  } catch (err) {
+    status.remove();
+    if (err.name === 'AbortError') body.appendChild(el('div', 'note', 'Interrupted'));
+    else body.appendChild(el('div', 'note warn', icon('alert') + '<span></span>')).lastChild.textContent = 'Error: ' + err.message;
+  } finally {
+    status.isConnected && status.remove();
+    if (pendingPrompt) closePrompt('gone', 'No longer needed');
+    running = false; abortCtl = null; refreshState();
+    scroller.scrollTop = scroller.scrollHeight;
+  }
+}
+
+// =====================================================================
+// Claude asking you: permission prompts and AskUserQuestion
+// Answer by tapping, typing, or pressing the mic and speaking.
+// =====================================================================
+let pendingPrompt = null; // { requestId, kind, box, ... }
+
+const norm = (t) => t.toLowerCase().replace(/[’']/g, '').replace(/[^a-z0-9 ]+/g, ' ').replace(/\s+/g, ' ').trim();
+function toolVerb(tool) {
+  return ({ Bash: 'run a command', Edit: 'edit a file', MultiEdit: 'edit a file', Write: 'write a file', Read: 'read a file',
+    WebFetch: 'fetch a web page', WebSearch: 'search the web', NotebookEdit: 'edit a notebook' })[tool] || `use ${tool}`;
+}
+
+async function respond(body) {
+  const res = await fetch('/api/respond', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+  if (!res.ok) closePrompt('gone', (await res.json().catch(() => ({}))).error || 'Could not send your answer');
+}
+
+function closePrompt(kind, text) {
+  if (!pendingPrompt) return;
+  const { box } = pendingPrompt;
+  box.classList.add('done');
+  box.appendChild(el('div', `ask-result ${kind}`, `${icon(kind === 'yes' ? 'check' : kind === 'no' ? 'x' : 'clock')}<span></span>`)).lastChild.textContent = text;
+  pendingPrompt = null;
+  refreshState();
+}
+
+function showPermission(ev, body, before) {
+  const i = ev.input || {};
+  const what = i.command || i.file_path || i.notebook_path || i.url || i.query || JSON.stringify(i, null, 2);
+  const box = el('div', 'ask', `
+    <div class="ask-head">${icon('shield')}<span>Claude wants to ${esc(toolVerb(ev.tool))}</span></div>
+    ${ev.description && ev.description !== what ? `<div class="ask-desc">${esc(ev.description)}</div>` : ''}
+    <pre class="ask-cmd"></pre>
+    <div class="ask-actions">
+      <button class="btn primary" data-a="allow">${icon('check')}Allow</button>
+      ${ev.canAlways ? `<button class="btn" data-a="always" title="Also saves an allow rule to this project's .claude/settings.local.json">Always allow</button>` : ''}
+      <button class="btn" data-a="deny">${icon('x')}Deny</button>
+    </div>
+    <div class="ask-hint">Or press the mic and say <b>yes</b>, <b>no</b>, <b>always</b>, or tell Claude what to do instead.</div>`);
+  box.querySelector('.ask-cmd').textContent = String(what).slice(0, 2000);
+  body.insertBefore(box, before);
+  pendingPrompt = { requestId: ev.requestId, kind: 'permission', box, canAlways: ev.canAlways };
+  box.querySelectorAll('[data-a]').forEach((b) => b.onclick = () => decidePermission({ allow: b.dataset.a !== 'deny', always: b.dataset.a === 'always' }));
+  refreshState();
+  box.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+  speak(`Claude wants to ${toolVerb(ev.tool)}: ${ev.description || ev.detail}. Should I allow it?`);
+}
+
+function decidePermission({ allow, always, message }) {
+  const p = pendingPrompt;
+  if (!p || p.kind !== 'permission') return;
+  stopSpeaking();
+  respond({ requestId: p.requestId, allow, always: always && p.canAlways, message });
+  closePrompt(allow ? 'yes' : 'no', allow ? (always ? 'Always allowed' : 'Allowed') : message ? `Denied: “${message}”` : 'Denied');
+  speak(allow ? 'Okay.' : message ? 'Okay, I\'ll pass that on.' : 'Okay, denied.');
+}
+
+// Spoken yes/no. Anything that isn't clearly yes or no is passed to Claude as instructions.
+function parseApproval(text) {
+  const t = norm(text);
+  const no = /\b(no|nope|nah|deny|dont|do not|stop|cancel|reject|decline|never|wait|hold on)\b/;
+  const yes = /\b(yes|yeah|yep|yup|sure|ok|okay|allow|approve|approved|go ahead|do it|proceed|fine|continue|go for it|please do|alright)\b/;
+  if (/\b(always|every time|dont ask again)\b/.test(t) && !/^(no|nope|dont)\b/.test(t)) return { allow: true, always: true };
+  if (yes.test(t) && !no.test(t)) return { allow: true };
+  if (no.test(t) && t.split(' ').length <= 3) return { allow: false };
+  return { allow: false, message: text.trim() };
+}
+
+function showQuestion(ev, body, before) {
+  const questions = ev.questions || [];
+  const box = el('div', 'ask', `<div class="ask-head">${icon('help')}<span>Claude has ${questions.length > 1 ? 'some questions' : 'a question'}</span></div>`);
+  const picks = questions.map(() => new Set());
+  questions.forEach((q, qi) => {
+    const qEl = box.appendChild(el('div', 'q', `<div class="q-text">${q.header ? `<span class="q-tag">${esc(q.header)}</span>` : ''}<span></span></div><div class="opts"></div>`));
+    qEl.querySelector('.q-text span:last-child').textContent = q.question + (q.multiSelect ? ' (pick any)' : '');
+    q.options.forEach((o, oi) => {
+      const b = qEl.querySelector('.opts').appendChild(el('button', 'opt', `<b><i>${oi + 1}</i><span></span></b><span></span>`));
+      b.querySelector('b span').textContent = o.label;
+      b.lastChild.textContent = o.description || '';
+      b.onclick = () => { pick(qi, [oi], true); };
+    });
+  });
+  const actions = box.appendChild(el('div', 'ask-actions', `<button class="btn primary" data-a="send" disabled>Send answers</button>`));
+  actions.hidden = !questions.some((q) => q.multiSelect) && questions.length === 1;
+  box.appendChild(el('div', 'ask-hint', 'Tap an option, or press the mic and say the option (“the second one”) or your own answer.'));
+  body.insertBefore(box, before);
+
+  const custom = {}; // qi -> free-text answer
+  const answered = (qi) => picks[qi].size > 0 || custom[qi];
+  function paint() {
+    box.querySelectorAll('.q').forEach((qEl, qi) => qEl.querySelectorAll('.opt').forEach((b, oi) => b.classList.toggle('sel', picks[qi].has(oi))));
+    actions.querySelector('button').disabled = !questions.every((_, qi) => answered(qi));
+  }
+  function pick(qi, ois, fromTap) {
+    const q = questions[qi];
+    delete custom[qi];
+    if (q.multiSelect && fromTap) ois.forEach((oi) => picks[qi].has(oi) ? picks[qi].delete(oi) : picks[qi].add(oi));
+    else { picks[qi].clear(); ois.forEach((oi) => picks[qi].add(oi)); }
+    paint();
+    // Single-choice questions send themselves as soon as every one is answered.
+    if (questions.every((_, i) => answered(i)) && !(q.multiSelect && fromTap)) submit();
+  }
+  function submit() {
+    if (pendingPrompt?.box !== box) return;
+    const answers = {};
+    questions.forEach((q, qi) => { answers[q.question] = custom[qi] || [...picks[qi]].sort().map((oi) => q.options[oi].label).join(', '); });
+    stopSpeaking();
+    respond({ requestId: ev.requestId, answers });
+    closePrompt('yes', Object.values(answers).join(' · '));
+    speak('Got it.');
+  }
+  actions.querySelector('button').onclick = submit;
+
+  pendingPrompt = {
+    requestId: ev.requestId, kind: 'question', box,
+    // A spoken answer goes to the first unanswered question.
+    answer(text) {
+      const qi = questions.findIndex((_, i) => !answered(i));
+      if (qi < 0) return submit();
+      const q = questions[qi];
+      const ois = matchOptions(text, q.options, q.multiSelect);
+      if (ois.length) pick(qi, ois, false);
+      else { picks[qi].clear(); custom[qi] = text.trim(); paint(); if (questions.every((_, i) => answered(i))) submit(); }
+      const next = questions.findIndex((_, i) => !answered(i));
+      if (next >= 0 && pendingPrompt?.box === box) speakQuestion(questions[next], false);
+    },
+  };
+  refreshState();
+  box.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+  speakQuestion(questions[0], true);
+}
+
+function speakQuestion(q, first) {
+  if (!q) return;
+  const opts = q.options.map((o, i) => `Option ${i + 1}: ${o.label}.`).join(' ');
+  speak(`${first ? 'Claude asks: ' : ''}${q.question} ${opts}${q.multiSelect ? ' You can pick more than one.' : ''}`);
+}
+
+// Match speech to options by label, then by ordinal ("the second one"), then by word overlap.
+function matchOptions(text, options, multi) {
+  const t = norm(text), words = t.split(' ');
+  let hits = options.map((o, i) => (norm(o.label) && t.includes(norm(o.label)) ? i : -1)).filter((i) => i >= 0);
+  if (!hits.length) {
+    const ORD = { first: 1, second: 2, third: 3, fourth: 4, fifth: 5, two: 2, three: 3, four: 4, five: 5, 1: 1, 2: 2, 3: 3, 4: 4, 5: 5 };
+    if (/\b(option|number)\s+one\b/.test(t) || t === 'one' || /\bthe first\b/.test(t)) hits.push(0);
+    for (const w of words) if (ORD[w] && ORD[w] <= options.length) hits.push(ORD[w] - 1);
+    if (/\b(last|final)\b/.test(t)) hits.push(options.length - 1);
+  }
+  if (!hits.length) {
+    let best = -1, score = 0;
+    options.forEach((o, i) => {
+      const toks = norm(o.label).split(' ').filter((w) => w.length > 2);
+      const sc = toks.length ? toks.filter((w) => words.includes(w)).length / toks.length : 0;
+      if (sc > score) { score = sc; best = i; }
+    });
+    if (score >= 0.5) hits.push(best);
+  }
+  hits = [...new Set(hits)];
+  return multi ? hits : hits.slice(0, 1);
+}
+
+function answerByVoice(text) {
+  const p = pendingPrompt;
+  if (!p) return;
+  if (p.kind === 'permission') decidePermission(parseApproval(text));
+  else p.answer(text);
+}
+
+function toolPhrase(name) {
+  return ({ Bash: 'Running a command.', Read: 'Reading a file.', Edit: 'Editing a file.', Write: 'Writing a file.',
+    Grep: 'Searching the code.', Glob: 'Looking for files.', WebSearch: 'Searching the web.', WebFetch: 'Fetching a page.',
+    Task: 'Starting a helper agent.', Agent: 'Starting a helper agent.' })[name] || `Using ${name}.`;
+}
+
+function interrupt() {
+  stopSpeaking();
+  if (abortCtl) abortCtl.abort();
+}
+
+// The one button: listen -> send -> (Claude works and talks) -> press again to talk.
+function toggle() {
+  armMediaKeys();
+  if (view.kind !== 'session') return;
+  if (listening) return stopListening(true);
+  if (pendingPrompt) { stopSpeaking(); return startListening(); } // answering Claude, not interrupting it
+  interrupt();
+  startListening();
+}
+
+// =====================================================================
+// AirPods / media keys
+// Browsers only deliver headphone button presses to a page that is "playing media", so we
+// loop a silent track and treat every media action (play, pause, next…) as the talk button.
+// =====================================================================
+let mediaArmed = false, lastKey = 0, keepAlive;
+function silentWav(seconds) {
+  const rate = 8000, n = rate * seconds, buf = new ArrayBuffer(44 + n * 2), v = new DataView(buf);
+  const str = (o, s) => [...s].forEach((c, i) => v.setUint8(o + i, c.charCodeAt(0)));
+  str(0, 'RIFF'); v.setUint32(4, 36 + n * 2, true); str(8, 'WAVEfmt '); v.setUint32(16, 16, true);
+  v.setUint16(20, 1, true); v.setUint16(22, 1, true); v.setUint32(24, rate, true); v.setUint32(28, rate * 2, true);
+  v.setUint16(32, 2, true); v.setUint16(34, 16, true); str(36, 'data'); v.setUint32(40, n * 2, true);
+  for (let i = 0; i < n; i++) v.setInt16(44 + i * 2, i % 2 ? 1 : -1, true); // inaudible dither
+  return URL.createObjectURL(new Blob([buf], { type: 'audio/wav' }));
+}
+function armMediaKeys() {
+  if (mediaArmed || keepAlive || !('mediaSession' in navigator)) return;
+  keepAlive = new Audio(silentWav(10));
+  keepAlive.loop = true;
+  keepAlive.play().then(() => {
+    mediaArmed = true;
+    const onKey = () => {
+      const now = Date.now();
+      if (now - lastKey < 600) return; // one press can fire more than one action
+      lastKey = now;
+      keepAlive.play().catch(() => {});
+      navigator.mediaSession.playbackState = 'playing';
+      toggle();
+    };
+    for (const a of ['play', 'pause', 'stop', 'nexttrack', 'previoustrack', 'togglemicrophone', 'hangup']) {
+      try { navigator.mediaSession.setActionHandler(a, onKey); } catch {}
+    }
+    navigator.mediaSession.playbackState = 'playing';
+    $('mediaPill').querySelector('.txt').textContent = 'AirPods ready';
+    $('mediaPill').classList.add('on');
+    refreshState();
+  }).catch(() => { keepAlive = null; });
+}
+document.addEventListener('pointerdown', armMediaKeys);
+document.addEventListener('keydown', armMediaKeys);
+
+// ---------- controls ----------
+$('talk').onclick = toggle;
+document.addEventListener('keydown', (e) => {
+  if (view.kind !== 'session' || e.target.closest('input, select, textarea, button, summary')) return;
+  if (e.code === 'Space') { e.preventDefault(); if (!e.repeat) toggle(); }
+  if (e.code === 'Escape') stopSpeaking();
+});
+$('typebar').onsubmit = (e) => {
+  e.preventDefault();
+  const t = $('typed').value.trim();
+  if (!t) return;
+  $('typed').value = '';
+  stopListening(false);
+  if (pendingPrompt) return answerByVoice(t);
+  interrupt();
+  ask(t);
+};
+
+route();
+refreshState();
+</script>
+</body>
+</html>

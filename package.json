@@ -1,0 +1,8 @@
+{
+  "name": "voice-claude",
+  "version": "1.0.0",
+  "description": "Talk to Claude Code with your voice and hear its replies",
+  "private": true,
+  "bin": { "voice-claude": "server.js" },
+  "scripts": { "start": "node server.js" }
+}
