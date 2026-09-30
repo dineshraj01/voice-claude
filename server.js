@@ -370,6 +370,12 @@ const server = http.createServer(async (req, res) => {
       res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
       return fs.createReadStream(INDEX).pipe(res);
     }
+    if (req.method === 'GET' && (m = url.pathname.match(/^\/vendor\/([\w.-]+\.js)$/))) {
+      const file = path.join(__dirname, 'public', 'vendor', m[1]);
+      if (!fs.existsSync(file)) return json(404, { error: 'not found' });
+      res.writeHead(200, { 'Content-Type': 'text/javascript; charset=utf-8', 'Cache-Control': 'max-age=86400' });
+      return fs.createReadStream(file).pipe(res);
+    }
     if (route === 'GET /api/sessions') {
       const hidden = new Set(loadState().hidden);
       const sessions = allSessions().map(({ file, ...s }) => ({ ...s, hidden: hidden.has(s.id) }));
