@@ -33,7 +33,7 @@ Lists every Claude Code session on this Mac (from `~/.claude/projects`), grouped
 
 | Variable | Default | Meaning |
 |---|---|---|
-| `CLAUDE_PERMISSION_MODE` | `auto` | Passed to `--permission-mode`: `auto`, `acceptEdits`, `default`, `plan`, `bypassPermissions` |
+| `CLAUDE_PERMISSION_MODE` | `auto` | Default permission mode. Change it per message with the picker in the top bar: Auto, Accept edits, Ask first, Plan only |
 | `CLAUDE_MODEL` | Claude Code default | Passed to `--model` |
 | `PORT` | `4317` | Local port |
 | `NO_OPEN` | unset | Set to `1` if you don't want a browser tab opened |

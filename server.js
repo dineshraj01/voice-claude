@@ -33,6 +33,8 @@ if (!process.env.VOICE_CLAUDE_WATCHED && process.env.NO_WATCH !== '1') {
 }
 const DEFAULT_DIR = path.resolve(process.argv[2] || process.env.CLAUDE_CWD || os.homedir());
 const PERMISSION_MODE = process.env.CLAUDE_PERMISSION_MODE || 'auto';
+// Modes the page may pick per message (the picker in the top bar).
+const PERMISSION_MODES = new Set(['auto', 'acceptEdits', 'manual', 'plan']);
 const MODEL = process.env.CLAUDE_MODEL || '';
 const CLAUDE_BIN = process.env.CLAUDE_BIN || 'claude';
 const CLAUDE_HOME = process.env.CLAUDE_CONFIG_DIR || path.join(os.homedir(), '.claude');
@@ -211,14 +213,14 @@ function cancelCurrent() {
   current.kill('SIGINT');
 }
 
-function ask({ content, sessionId, cwd }, res) {
+function ask({ content, sessionId, cwd, permissionMode = PERMISSION_MODE }, res) {
   cancelCurrent();
 
   // stream-json input + --permission-prompt-tool stdio lets Claude Code route permission
   // prompts and AskUserQuestion to us as control requests, like the Agent SDK does.
   const args = ['-p', '--input-format', 'stream-json', '--output-format', 'stream-json', '--verbose',
     '--include-partial-messages', '--permission-prompt-tool', 'stdio',
-    '--permission-mode', PERMISSION_MODE, '--append-system-prompt', VOICE_PROMPT, '--add-dir', UPLOAD_DIR];
+    '--permission-mode', permissionMode, '--append-system-prompt', VOICE_PROMPT, '--add-dir', UPLOAD_DIR];
   if (sessionId) args.push('--resume', sessionId);
   if (MODEL) args.push('--model', MODEL);
 
@@ -380,7 +382,8 @@ const server = http.createServer(async (req, res) => {
       return json(200, { ok: true });
     }
     if (route === 'POST /api/ask') {
-      const { text, sessionId, cwd, images = [], files = [] } = await readJson(req);
+      const { text, sessionId, cwd, images = [], files = [], permissionMode } = await readJson(req);
+      const mode = PERMISSION_MODES.has(permissionMode) ? permissionMode : PERMISSION_MODE;
       const imgs = (Array.isArray(images) ? images : []).filter((i) => IMAGE_TYPES.has(i?.mediaType) && typeof i.data === 'string');
       // Only paths this server saved may be attached.
       const paths = (Array.isArray(files) ? files : []).map(String)
@@ -392,11 +395,11 @@ const server = http.createServer(async (req, res) => {
         const s = UUID.test(sessionId) && findSession(sessionId);
         if (!s) return json(404, { error: 'session not found' });
         if (!isDir(s.cwd)) return json(400, { error: `directory no longer exists: ${s.cwd}` });
-        return ask({ content, sessionId, cwd: s.cwd }, res);
+        return ask({ content, sessionId, cwd: s.cwd, permissionMode: mode }, res);
       }
       const dir = path.resolve(String(cwd || DEFAULT_DIR).replace(/^~(?=$|\/)/, os.homedir()));
       if (!isDir(dir)) return json(400, { error: `not a directory: ${dir}` });
-      return ask({ content, cwd: dir }, res);
+      return ask({ content, cwd: dir, permissionMode: mode }, res);
     }
     if (route === 'POST /api/upload') {
       fs.mkdirSync(UPLOAD_DIR, { recursive: true });
